@@ -10,6 +10,7 @@ import { GRID_SIZE, EGG_SEARCH_RADIUS, MINUTES_PER_DAY, PHASE_LIST } from './con
 
 export class SimulationEngine {
   constructor(config = {}) {
+    this.config = config;
     this.colonySize = config.colonySize || 80;
     this.gridSize = config.gridSize || GRID_SIZE;
     this.stepsPerTick = config.stepsPerTick || 60; // How many sim steps per animation frame
@@ -54,44 +55,32 @@ export class SimulationEngine {
       totalEggsDropped: 0
     };
 
-    // Place penguins in a circular huddle pattern at center
+    // Disperse penguins randomly within a larger area (circle) so they gather naturally when cold
     const cx = Math.floor(this.gridSize / 2);
     const cy = Math.floor(this.gridSize / 2);
-    const radius = Math.ceil(Math.sqrt(this.colonySize / Math.PI));
-    
+    const scatterRadius = this.gridSize * 0.4;
+
     let placed = 0;
-    // Spiral outward from center
-    for (let r = 0; r <= radius + 5 && placed < this.colonySize; r++) {
-      for (let dx = -r; dx <= r && placed < this.colonySize; dx++) {
-        for (let dy = -r; dy <= r && placed < this.colonySize; dy++) {
-          if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue; // Only ring
-          const x = cx + dx, y = cy + dy;
-          if (Math.sqrt(dx * dx + dy * dy) <= radius + 2 && this.grid.isEmpty(x, y)) {
-            const p = new Penguin(x, y);
-            this.penguins.push(p);
-            this.grid.set(x, y, p);
-            placed++;
-          }
-        }
-      }
-    }
+    let attempts = 0;
+    while (placed < this.colonySize && attempts < this.colonySize * 10) {
+      attempts++;
+      const angle = Math.random() * Math.PI * 2;
+      const r = Math.random() * scatterRadius;
+      let x = cx + Math.floor(Math.cos(angle) * r);
+      let y = cy + Math.floor(Math.sin(angle) * r);
+      x = Math.max(1, Math.min(this.gridSize - 2, x));
+      y = Math.max(1, Math.min(this.gridSize - 2, y));
 
-    // Fill inner holes
-    for (let r = 0; r <= radius && placed < this.colonySize; r++) {
-      for (let dx = -r; dx <= r && placed < this.colonySize; dx++) {
-        for (let dy = -r; dy <= r && placed < this.colonySize; dy++) {
-          const x = cx + dx, y = cy + dy;
-          if (this.grid.isEmpty(x, y) && Math.sqrt(dx * dx + dy * dy) <= radius) {
-            const p = new Penguin(x, y);
-            this.penguins.push(p);
-            this.grid.set(x, y, p);
-            placed++;
-          }
-        }
+      if (this.grid.isEmpty(x, y)) {
+        const p = new Penguin(x, y);
+        // Aplica parámetros iniciales según config
+        p.bodyTemp = this.config?.bodyTemp || p.bodyTemp;
+        p.energy = this.config?.energy || p.energy;
+        this.penguins.push(p);
+        this.grid.set(x, y, p);
+        placed++;
       }
-    }
-
-    this.updateBorderStatus();
+    }    this.updateBorderStatus();
     this.env.update(0);
 
     return this.getState();
@@ -168,13 +157,15 @@ export class SimulationEngine {
 
         // f) Movement - huddle rotation
         p.moved = false;
-        if (p.shouldMoveInward()) {
+        const criticalTemp = this.config?.criticalTemp || 34.0;
+        if (p.shouldMoveInward(criticalTemp)) {
           this.moveTowardCenter(p, center);
           p.moved = true;
         }
 
         // g) Stochastic egg loss
-        if (p.moved && p.checkEggLoss(true)) {
+        const eggLossProb = this.config?.eggLossProb || 0.005;
+        if (p.moved && p.checkEggLoss(true, eggLossProb, eggLossProb * 3)) {
           p.egg.drop(p.x, p.y, this.env.temperature, this.env.windSpeed);
           this.droppedEggs.push(p.egg);
           this.stats.totalEggsDropped++;

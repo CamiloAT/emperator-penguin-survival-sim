@@ -26,7 +26,7 @@ export default function App() {
 
   const initEngine = useCallback(() => {
     const engine = new SimulationEngine({
-      colonySize: config.colonySize,
+      ...config,
       stepsPerTick: speed
     });
     const state = engine.init();

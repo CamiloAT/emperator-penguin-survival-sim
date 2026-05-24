@@ -99,19 +99,19 @@ export class Penguin {
   /**
    * Check if penguin should try to move to interior
    */
-  shouldMoveInward() {
-    return this.isAlive && this.isBorder && this.bodyTemp < CRITICAL_TEMP_THRESHOLD && this.state === PENGUIN_STATE.NORMAL;
+  shouldMoveInward(criticalTemp = CRITICAL_TEMP_THRESHOLD) {
+    return this.isAlive && this.isBorder && this.bodyTemp < criticalTemp && this.state === PENGUIN_STATE.NORMAL;
   }
 
   /**
    * Stochastic egg loss check
    * Returns true if egg was lost
    */
-  checkEggLoss(hasMoved) {
+  checkEggLoss(hasMoved, baseProbNormal = EGG_LOSS_PROB_NORMAL, baseProbBorder = EGG_LOSS_PROB_BORDER) {
     if (!this.isAlive || !this.hasEgg || this.egg.state !== EGG_STATE.STABLE) return false;
     if (!hasMoved) return false;
 
-    const prob = this.isBorder ? EGG_LOSS_PROB_BORDER : EGG_LOSS_PROB_NORMAL;
+    const prob = this.isBorder ? baseProbBorder : baseProbNormal;
     
     if (Math.random() < prob) {
       this.loseEgg();

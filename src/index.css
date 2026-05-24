@@ -148,13 +148,28 @@ body::before {
 
 /* ===== CARD ===== */
 .card {
+  display: flex;
+  flex-direction: column;
   background: var(--bg-glass);
   backdrop-filter: blur(16px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  padding: 1.25rem;
+  padding: 1rem 1.25rem;
   box-shadow: var(--shadow-sm);
   transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.card::-webkit-scrollbar {
+  width: 6px;
+}
+.card::-webkit-scrollbar-track {
+  background: transparent;
+}
+.card::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 3px;
 }
 
 .card:hover {
@@ -187,7 +202,7 @@ body::before {
 
 /* ===== CONTROLS ===== */
 .control-group {
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .control-group label {

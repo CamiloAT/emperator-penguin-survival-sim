@@ -49,11 +49,11 @@ export const DEFAULT_BODY_TEMP = 38.0;     // °C
 export const CRITICAL_TEMP_THRESHOLD = 34.0; // °C - triggers movement to interior
 export const HYPOTHERMIA_TEMP = 30.0;       // °C - danger zone
 export const DEFAULT_ENERGY = 100.0;        // Percentage (lipid reserve)
-export const ENERGY_DECAY_BASE = 0.0008;    // Per step, at interior
-export const ENERGY_DECAY_BORDER = 0.003;   // Per step, at border
+export const ENERGY_DECAY_BASE = 0.0002;    // Per step, at interior
+export const ENERGY_DECAY_BORDER = 0.0008;   // Per step, at border
 export const HEAT_TRANSFER_RATE = 0.15;     // Between neighbors per step
-export const HEAT_LOSS_INTERIOR = 0.005;    // Per step, interior
-export const HEAT_LOSS_BORDER_BASE = 0.04;  // Per step, border base
+export const HEAT_LOSS_INTERIOR = 0.0005;    // Per step, interior
+export const HEAT_LOSS_BORDER_BASE = 0.004;  // Per step, border base
 
 // Egg parameters
 export const EGG_LOSS_PROB_NORMAL = 0.005;  // 0.5% per movement

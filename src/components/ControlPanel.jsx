@@ -77,7 +77,7 @@ export default function ControlPanel({ config, setConfig, running, onStart, onPa
       </div>
 
       {/* Speed control */}
-      <div className="control-group" style={{ marginTop: '0.5rem' }}>
+      <div className="control-group" style={{ marginTop: '0.5rem', marginBottom: '1rem' }}>
         <label>
           <FastForward size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />
           Velocidad de Simulación
@@ -87,7 +87,7 @@ export default function ControlPanel({ config, setConfig, running, onStart, onPa
             <button key={s}
               className={`speed-btn ${speed === s ? 'speed-btn--active' : ''}`}
               onClick={() => onSpeedChange(s)}>
-              {s <= 60 ? '1x' : s <= 120 ? '2x' : s <= 300 ? '5x' : '10x'}
+              {s <= 30 ? '1x' : s <= 60 ? '2x' : s <= 120 ? '4x' : s <= 300 ? '10x' : '20x'}
             </button>
           ))}
         </div>

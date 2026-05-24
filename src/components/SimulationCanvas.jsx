@@ -6,10 +6,23 @@ import { Wind } from 'lucide-react';
 const CELL = 14;
 
 function tempToColor(temp) {
-  const t = Math.max(0, Math.min(1, (temp - 28) / 12));
-  const r = Math.round(239 * (1 - t) + 30 * t);
-  const g = Math.round(71 * (1 - t) + 144 * t);
-  const b = Math.round(111 * (1 - t) + 255 * t);
+  // Rango: Azul (muy frio <= 30) -> Negro/Gris -> Naranja/Amarillo (caliente >= 38)
+  const t = Math.max(0, Math.min(1, (temp - 30) / 8));
+  // Interpolacion manual simple
+  let r, g, b;
+  if(t < 0.5) {
+    // Azul a Gris oscuro (30 a 34)
+    const t2 = t * 2;
+    r = Math.round(0 * (1 - t2) + 80 * t2);
+    g = Math.round(100 * (1 - t2) + 80 * t2);
+    b = Math.round(255 * (1 - t2) + 80 * t2);
+  } else {
+    // Gris oscuro a Naranja/Amarillo (34 a 38)
+    const t2 = (t - 0.5) * 2;
+    r = Math.round(80 * (1 - t2) + 255 * t2);
+    g = Math.round(80 * (1 - t2) + 170 * t2);
+    b = Math.round(80 * (1 - t2) + 0 * t2);
+  }
   return `rgb(${r},${g},${b})`;
 }
 
@@ -182,21 +195,31 @@ export default function SimulationCanvas({ simState }) {
         )}
       </div>
 
-      <div className="legend">
-        <div className="legend__item">
-          <div className="legend__dot" style={{ background: '#1e90ff' }} />
-          Interior (cálido)
+      <div className="legend" style={{ flexWrap: 'wrap', gap: '0.75rem', justifyContent: 'center' }}>
+        <div style={{ width: '100%', textAlign: 'center', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
+          Guía de Temperatura de los Pingüinos:
         </div>
-        <div className="legend__item">
-          <div className="legend__dot" style={{ background: '#ef476f' }} />
-          Borde (frío)
+        <div className="legend__item" style={{ fontSize: '0.75rem' }}>
+          <div className="legend__dot" style={{ background: 'rgb(0, 100, 255)' }} />
+          Frío Extremo (≤ 30°C)
         </div>
+        <div className="legend__item" style={{ fontSize: '0.75rem' }}>
+          <div className="legend__dot" style={{ background: 'rgb(80, 80, 80)' }} />
+          Riesgo (34°C)
+        </div>
+        <div className="legend__item" style={{ fontSize: '0.75rem' }}>
+          <div className="legend__dot" style={{ background: 'rgb(255, 170, 0)' }} />
+          Óptimo (≥ 38°C)
+        </div>
+        
+        <div style={{ width: '100%', height: '1px', background: 'var(--border-subtle)', margin: '4px 0' }} />
+        
         <div className="legend__item">
-          <div className="legend__dot" style={{ background: '#ffd166' }} />
+          <div className="legend__dot" style={{ background: '#ffd166', borderRadius: '50%' }} />
           Huevo protegido
         </div>
         <div className="legend__item">
-          <div className="legend__dot" style={{ background: '#f8961e', boxShadow: '0 0 4px #f8961e' }} />
+          <div className="legend__dot" style={{ background: '#f8961e', boxShadow: '0 0 4px #f8961e', borderRadius: '50%' }} />
           Huevo expuesto
         </div>
         <div className="legend__item">

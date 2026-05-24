@@ -132,7 +132,7 @@ export class SimulationEngine {
         if (!p.isAlive) {
           this.stats.penguinsDead++;
           this.grid.clear(p.x, p.y);
-          if (p.egg.state === EGG_STATE.EXPOSED) {
+          if (p.egg && p.egg.state === EGG_STATE.EXPOSED) {
             this.droppedEggs.push(p.egg);
           }
           if (this.step % MINUTES_PER_DAY < this.stepsPerTick) {

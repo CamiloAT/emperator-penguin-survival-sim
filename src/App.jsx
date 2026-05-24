@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Snowflake } from 'lucide-react';
+import { Bird } from 'lucide-react'; // Bird can works as a penguin replacement
 import SimulationCanvas from './components/SimulationCanvas.jsx';
 import ControlPanel from './components/ControlPanel.jsx';
 import Dashboard from './components/Dashboard.jsx';
@@ -89,8 +89,8 @@ export default function App() {
       {/* Header */}
       <header className="app-header">
         <div className="app-header__left">
-          <div className="app-header__icon">
-            <Snowflake size={22} color="white" />
+          <div className="app-header__icon" style={{ backgroundColor: 'var(--accent-orange)' }}>
+            <Bird size={24} color="white" strokeWidth={2} />
           </div>
           <div>
             <h1 className="app-header__title">Pingüinos Emperador — Supervivencia Antártica</h1>

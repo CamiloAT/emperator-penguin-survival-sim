@@ -80,16 +80,17 @@ export default function ControlPanel({ config, setConfig, running, onStart, onPa
       <div className="control-group" style={{ marginTop: '0.5rem', marginBottom: '1rem' }}>
         <label>
           <FastForward size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-          Velocidad de Simulación
+          Velocidad de Simulación ({speed} pasos/tick)
         </label>
         <div className="speed-control" style={{ marginTop: '0.35rem' }}>
-          {[30, 60, 120, 300, 600].map(s => (
-            <button key={s}
-              className={`speed-btn ${speed === s ? 'speed-btn--active' : ''}`}
-              onClick={() => onSpeedChange(s)}>
-              {s <= 30 ? '1x' : s <= 60 ? '2x' : s <= 120 ? '4x' : s <= 300 ? '10x' : '20x'}
-            </button>
-          ))}
+          <input 
+            type="range" 
+            min="1" 
+            max="1200" 
+            step="10" 
+            value={speed}
+            onChange={e => onSpeedChange(+e.target.value)} 
+          />
         </div>
       </div>
 

@@ -28,8 +28,11 @@ export class Penguin {
     this.state = PENGUIN_STATE.NORMAL;
     this.isBorder = false;
     this.neighborCount = 0;
-    this.egg = new Egg(this.id);
-    this.hasEgg = true;
+    
+    // Solo ~60% de los pingüinos tienen huevo
+    this.hasEgg = Math.random() < 0.6;
+    this.egg = this.hasEgg ? new Egg(this.id) : null;
+    
     this.fatReserve = DEFAULT_ENERGY;
 
     // Tracking
@@ -54,10 +57,10 @@ export class Penguin {
     
     if (this.isBorder) {
       // Border penguins lose more heat, wind effect is significant
-      return HEAT_LOSS_BORDER_BASE + windChill * 0.02 + (this.bodyTemp - extTemp) * 0.0005;
+      return HEAT_LOSS_BORDER_BASE + windChill * 0.005 + (this.bodyTemp - extTemp) * 0.0001;
     } else {
       // Interior penguins are protected
-      return HEAT_LOSS_INTERIOR + (this.bodyTemp - extTemp) * 0.00005;
+      return HEAT_LOSS_INTERIOR + (this.bodyTemp - extTemp) * 0.00001;
     }
   }
 
@@ -84,7 +87,7 @@ export class Penguin {
     if (!this.isAlive) return;
 
     const baseDecay = this.isBorder ? ENERGY_DECAY_BORDER : ENERGY_DECAY_BASE;
-    const thermoStress = Math.max(0, (DEFAULT_BODY_TEMP - this.bodyTemp) * 0.001);
+    const thermoStress = Math.max(0, (DEFAULT_BODY_TEMP - this.bodyTemp) * 0.0001);
     const totalDecay = (baseDecay + thermoStress) * phaseMultiplier;
     
     this.energy -= totalDecay;
@@ -122,6 +125,7 @@ export class Penguin {
 
   /** Drop the egg at current position */
   loseEgg() {
+    if (!this.egg) return;
     this.hasEgg = false;
     this.egg.drop(this.x, this.y, 0, 0); // temp/wind set externally
     this.state = PENGUIN_STATE.SEARCHING_EGG;
@@ -130,7 +134,7 @@ export class Penguin {
 
   /** Try to recover egg if nearby */
   tryRecoverEgg(grid) {
-    if (this.state !== PENGUIN_STATE.SEARCHING_EGG) return false;
+    if (this.state !== PENGUIN_STATE.SEARCHING_EGG || !this.egg) return false;
     if (this.egg.state === EGG_STATE.FROZEN) {
       this.state = PENGUIN_STATE.NORMAL;
       this.hasEgg = false;

@@ -1,35 +1,35 @@
 /* ===== DESIGN TOKENS ===== */
 :root {
-  --bg-primary: #0a0e1a;
-  --bg-secondary: #111827;
-  --bg-card: #1a2035;
-  --bg-card-hover: #1f2847;
-  --bg-glass: rgba(26, 32, 53, 0.85);
-  --border-subtle: rgba(100, 140, 220, 0.12);
-  --border-glow: rgba(76, 201, 240, 0.3);
+  --bg-primary: #050505;
+  --bg-secondary: #121212;
+  --bg-card: #0a0a0a;
+  --bg-card-hover: #161616;
+  --bg-glass: rgba(10, 10, 10, 0.85);
+  --border-subtle: rgba(255, 255, 255, 0.12);
+  --border-glow: rgba(255, 153, 0, 0.3);
 
-  --text-primary: #e8ecf4;
-  --text-secondary: #8b9dc3;
-  --text-muted: #5a6b8a;
-  --text-accent: #4cc9f0;
+  --text-primary: #f5f5f5;
+  --text-secondary: #d4d4d4;
+  --text-muted: #888888;
+  --text-accent: #ff9900;
 
-  --accent-cyan: #4cc9f0;
-  --accent-blue: #4361ee;
-  --accent-purple: #7209b7;
+  --accent-cyan: #ffaa00; /* Reutilizando var existente como naranja/amarillo */
+  --accent-blue: #ff7700;
+  --accent-purple: #dd5500;
   --accent-orange: #f8961e;
   --accent-red: #ef476f;
   --accent-green: #06d6a0;
   --accent-yellow: #ffd166;
 
-  --gradient-primary: linear-gradient(135deg, #4361ee 0%, #4cc9f0 100%);
-  --gradient-warm: linear-gradient(135deg, #f8961e 0%, #ef476f 100%);
-  --gradient-cold: linear-gradient(135deg, #4361ee 0%, #7209b7 100%);
-  --gradient-aurora: linear-gradient(135deg, #06d6a0 0%, #4cc9f0 50%, #7209b7 100%);
+  --gradient-primary: linear-gradient(135deg, #ff7700 0%, #ffcc00 100%);
+  --gradient-warm: linear-gradient(135deg, #ffaa00 0%, #ff5500 100%);
+  --gradient-cold: linear-gradient(135deg, #222222 0%, #444444 100%);
+  --gradient-aurora: linear-gradient(135deg, #ffffff 0%, #ffcc00 50%, #ff7700 100%);
 
-  --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
-  --shadow-glow: 0 0 20px rgba(76, 201, 240, 0.15);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.5);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.6);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.7);
+  --shadow-glow: 0 0 20px rgba(255, 153, 0, 0.15);
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -64,9 +64,9 @@ body::before {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(ellipse at 20% 20%, rgba(67, 97, 238, 0.06) 0%, transparent 50%),
-              radial-gradient(ellipse at 80% 80%, rgba(114, 9, 183, 0.05) 0%, transparent 50%),
-              radial-gradient(ellipse at 50% 50%, rgba(76, 201, 240, 0.03) 0%, transparent 60%);
+  background: radial-gradient(ellipse at 20% 20%, rgba(255, 119, 0, 0.04) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 80%, rgba(255, 170, 0, 0.04) 0%, transparent 50%),
+              radial-gradient(ellipse at 50% 50%, rgba(255, 153, 0, 0.02) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
   animation: auroraShift 30s ease-in-out infinite alternate;
@@ -230,7 +230,7 @@ body::before {
   border-radius: 50%;
   background: var(--accent-cyan);
   cursor: pointer;
-  box-shadow: 0 0 8px rgba(76, 201, 240, 0.4);
+  box-shadow: 0 0 8px rgba(255, 170, 0, 0.4);
   transition: transform var(--transition-fast);
 }
 
@@ -620,27 +620,28 @@ body::before {
   gap: 0.5rem;
 }
 
-.speed-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 1px solid var(--border-subtle);
-  background: transparent;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 0.7rem;
-  font-family: var(--font-mono);
-  font-weight: 600;
-  transition: all var(--transition-fast);
+.speed-control input[type="range"] {
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-secondary);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
-.speed-btn:hover, .speed-btn--active {
-  border-color: var(--accent-cyan);
-  color: var(--accent-cyan);
-  box-shadow: 0 0 8px rgba(76, 201, 240, 0.2);
+.speed-control input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(255, 170, 0, 0.4);
+  transition: transform var(--transition-fast);
+}
+
+.speed-control input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
 }
 
 /* ===== PULSE ANIMATION ===== */

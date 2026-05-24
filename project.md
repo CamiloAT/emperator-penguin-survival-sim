@@ -20,15 +20,15 @@ INGENIERÍA DE SISTEMAS Y COMPUTACIÓN
 
 /2026
 
-[**1\. DEFINICIÓN DEL PROBLEMA	4**](#1.-definición-del-problema)
+[**1\. DEFINICIÓN DEL PROBLEMA	3**](#1.-definición-del-problema)
 
-[**2\. ALCANCE	4**](#2.-alcance)
+[**2\. ALCANCE	3**](#2.-alcance)
 
-[2.1 Lo que incluye la simulación	4](#2.1-lo-que-incluye-la-simulación)
+[2.1 Lo que incluye la simulación	3](#2.1-lo-que-incluye-la-simulación)
 
-[2.2 Lo que no incluye la simulación	5](#2.2-lo-que-no-incluye-la-simulación)
+[2.2 Lo que no incluye la simulación	4](#2.2-lo-que-no-incluye-la-simulación)
 
-[2.3 Supuestos del Modelo	5](#2.3-supuestos-del-modelo)
+[2.3 Supuestos del Modelo	4](#2.3-supuestos-del-modelo)
 
 [**3\. MODELO CONCEPTUAL	5**](#3.-modelo-conceptual)
 
@@ -42,7 +42,7 @@ INGENIERÍA DE SISTEMAS Y COMPUTACIÓN
 
 [3.5 Variables de Entrada y Salida	6](#3.5-variables-de-entrada-y-salida)
 
-[**4\. CONCLUSIONES	7**](#4.-conclusiones)
+[**4\. CONCLUSIONES	8**](#4.-conclusiones)
 
 ## 
 
@@ -132,7 +132,6 @@ Cada pingüino es un agente con los siguientes atributos:
 * **Tiempo Exposición:** Contador regresivo en segundos (pasos de simulación cortos). Su valor inicial se calcula según las condiciones climáticas del paso actual mediante la fórmula adaptada:  
   *Tiempo\_Límite \= 180 \- (Text \* \-2) \- (Viento \* 0.5)*
 
-
 ### **3.3 Reglas de Comportamiento** {#3.3-reglas-de-comportamiento}
 
 En cada paso de tiempo, cada agente ejecuta las siguientes reglas en orden:
@@ -157,12 +156,6 @@ A continuación se presenta una descripción esquemática del flujo del modelo. 
 ### **3.5 Variables de Entrada y Salida** {#3.5-variables-de-entrada-y-salida}
 
 **Variables de entrada**
-
-Aquí tienes las listas completamente limpias, utilizando solo texto plano y formato Markdown básico para que puedas copiar y pegar directamente en tu archivo sin problemas de símbolos o códigos extraños.
-
-## **3.5 Variables de Entrada y Salida**
-
-### **Variables de Entrada**
 
 * **Número de pingüinos en la colonia (N):** Define la población inicial de agentes en la grilla. En esta simulación, representa exclusivamente a la población de machos incubadores, dado que las hembras han migrado al océano. Es una variable crítica para evaluar cómo la masa del grupo influye en la retención del calor.  
 * **Perfil térmico y climático ambiental (Temperatura exterior y Velocidad del viento):** Define la temperatura en grados Celsius y la velocidad del viento en km/h. Estas variables no son constantes, sino que cambian según la fase del invierno para simular el recrudecimiento del clima antártico, alcanzando mínimos de hasta \-60 grados Celsius y vientos de 200 km/h.  

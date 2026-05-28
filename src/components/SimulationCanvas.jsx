@@ -1,55 +1,211 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { PENGUIN_STATE } from '../simulation/Penguin.js';
 import { EGG_STATE } from '../simulation/Egg.js';
 import { Wind } from 'lucide-react';
 
 const CELL = 14;
+const HALF = CELL / 2;
 
-function tempToColor(temp) {
-  // Rango: Azul (muy frio <= 30) -> Negro/Gris -> Naranja/Amarillo (caliente >= 38)
-  const t = Math.max(0, Math.min(1, (temp - 30) / 8));
-  // Interpolacion manual simple
-  let r, g, b;
-  if(t < 0.5) {
-    // Azul a Gris oscuro (30 a 34)
-    const t2 = t * 2;
-    r = Math.round(0 * (1 - t2) + 80 * t2);
-    g = Math.round(100 * (1 - t2) + 80 * t2);
-    b = Math.round(255 * (1 - t2) + 80 * t2);
-  } else {
-    // Gris oscuro a Naranja/Amarillo (34 a 38)
-    const t2 = (t - 0.5) * 2;
-    r = Math.round(80 * (1 - t2) + 255 * t2);
-    g = Math.round(80 * (1 - t2) + 170 * t2);
-    b = Math.round(80 * (1 - t2) + 0 * t2);
+/**
+ * Pre-render penguin sprites to offscreen canvases for performance.
+ * Returns a cache object with all sprite variations.
+ */
+function createSpriteCache() {
+  const cache = {};
+  const states = ['interior', 'border', 'cold', 'searching', 'withEgg_interior', 'withEgg_border', 'withEgg_cold'];
+  
+  for (const state of states) {
+    const oc = document.createElement('canvas');
+    oc.width = CELL;
+    oc.height = CELL;
+    const ctx = oc.getContext('2d');
+    drawPenguinSprite(ctx, state, CELL);
+    cache[state] = oc;
   }
-  return `rgb(${r},${g},${b})`;
+
+  // Egg sprite
+  const eggCanvas = document.createElement('canvas');
+  eggCanvas.width = CELL;
+  eggCanvas.height = CELL;
+  const eggCtx = eggCanvas.getContext('2d');
+  drawDroppedEggSprite(eggCtx, CELL);
+  cache['droppedEgg'] = eggCanvas;
+
+  // Dead penguin
+  const deadCanvas = document.createElement('canvas');
+  deadCanvas.width = CELL;
+  deadCanvas.height = CELL;
+  // empty — we skip dead ones
+  cache['dead'] = deadCanvas;
+
+  return cache;
 }
 
-function energyToAlpha(energy) {
-  return 0.4 + (energy / 100) * 0.6;
+function drawPenguinSprite(ctx, state, size) {
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = size * 0.42;
+
+  const isSearching = state === 'searching';
+  const isCold = state.includes('cold');
+  const isBorder = state.includes('border');
+  const hasEgg = state.includes('withEgg');
+
+  // === Body (teardrop/oval shape) ===
+  ctx.save();
+  
+  // Body color based on temperature state
+  let bodyColor, bellyColor, headColor;
+  if (isCold) {
+    bodyColor = '#1a3a5c';  // Dark blue-black
+    bellyColor = '#4a7a9a'; // Pale cold blue
+    headColor = '#0f2840';
+  } else if (isBorder) {
+    bodyColor = '#1a1a2e';  // Dark charcoal
+    bellyColor = '#b8b8c8'; // Light grey belly
+    headColor = '#0d0d1a';
+  } else {
+    bodyColor = '#0d0d14';  // Rich black
+    bellyColor = '#e8e0d0'; // Warm cream belly
+    headColor = '#050508';
+  }
+
+  // Shadow
+  ctx.beginPath();
+  ctx.ellipse(cx + 0.5, cy + 0.5, r * 0.9, r, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fill();
+
+  // Main body (black outer)
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - 0.5, r * 0.88, r * 0.95, 0, 0, Math.PI * 2);
+  ctx.fillStyle = bodyColor;
+  ctx.fill();
+
+  // Belly (white/cream inner oval)
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + r * 0.15, r * 0.5, r * 0.7, 0, 0, Math.PI * 2);
+  ctx.fillStyle = bellyColor;
+  ctx.fill();
+
+  // Head (small circle on top)
+  ctx.beginPath();
+  ctx.arc(cx, cy - r * 0.7, r * 0.45, 0, Math.PI * 2);
+  ctx.fillStyle = headColor;
+  ctx.fill();
+
+  // Eyes (two tiny white dots)
+  const eyeY = cy - r * 0.75;
+  const eyeSpacing = r * 0.25;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(cx - eyeSpacing, eyeY, 0.8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx + eyeSpacing, eyeY, 0.8, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Beak (tiny orange triangle)
+  ctx.fillStyle = '#f0a030';
+  ctx.beginPath();
+  ctx.moveTo(cx - 1, eyeY + 1.5);
+  ctx.lineTo(cx + 1, eyeY + 1.5);
+  ctx.lineTo(cx, eyeY + 3);
+  ctx.closePath();
+  ctx.fill();
+
+  // Orange ear patches (emperor penguin hallmark)
+  ctx.fillStyle = 'rgba(240, 180, 40, 0.7)';
+  ctx.beginPath();
+  ctx.ellipse(cx - r * 0.45, eyeY + 1.5, 1.2, 1.8, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx + r * 0.45, eyeY + 1.5, 1.2, 1.8, 0.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // === Egg indicator (golden oval on belly) ===
+  if (hasEgg) {
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + r * 0.35, 1.8, 2.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 0.4;
+    ctx.stroke();
+  }
+
+  // === Searching state — orange pulsing ring drawn at render time ===
+  if (isSearching) {
+    ctx.strokeStyle = '#f8961e';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 1.5, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function drawDroppedEggSprite(ctx, size) {
+  const cx = size / 2;
+  const cy = size / 2;
+
+  // Glow
+  ctx.beginPath();
+  ctx.arc(cx, cy, size * 0.45, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(248, 150, 30, 0.25)';
+  ctx.fill();
+
+  // Egg shape
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, 2.5, 3.5, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#f8c060';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+}
+
+function getSpriteKey(p) {
+  const tempState = p.bodyTemp < 32 ? 'cold' : (p.isBorder ? 'border' : 'interior');
+  if (p.state === PENGUIN_STATE.SEARCHING_EGG) return 'searching';
+  if (p.hasEgg) return `withEgg_${tempState}`;
+  return tempState;
 }
 
 export default function SimulationCanvas({ simState }) {
   const canvasRef = useRef(null);
+  const spriteCacheRef = useRef(null);
+  const animFrameRef = useRef(null);
 
+  // Create sprite cache once
   useEffect(() => {
-    if (!simState || !canvasRef.current) return;
+    spriteCacheRef.current = createSpriteCache();
+  }, []);
+
+  const draw = useCallback(() => {
+    if (!simState || !canvasRef.current || !spriteCacheRef.current) return;
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false });
     const gs = simState.gridSize;
     const size = gs * CELL;
-    canvas.width = size;
-    canvas.height = size;
 
-    // Clear
-    ctx.fillStyle = '#0d1520';
+    if (canvas.width !== size || canvas.height !== size) {
+      canvas.width = size;
+      canvas.height = size;
+    }
+
+    const sprites = spriteCacheRef.current;
+
+    // === Background ===
+    ctx.fillStyle = '#0b1220';
     ctx.fillRect(0, 0, size, size);
 
-    // Grid lines (very subtle)
-    ctx.strokeStyle = 'rgba(76, 201, 240, 0.03)';
+    // Subtle grid (draw fewer lines for performance)
+    ctx.strokeStyle = 'rgba(76, 201, 240, 0.025)';
     ctx.lineWidth = 0.5;
-    for (let i = 0; i <= gs; i++) {
+    const gridStep = Math.max(2, Math.floor(gs / 20));
+    for (let i = 0; i <= gs; i += gridStep) {
       ctx.beginPath();
       ctx.moveTo(i * CELL, 0);
       ctx.lineTo(i * CELL, size);
@@ -60,107 +216,90 @@ export default function SimulationCanvas({ simState }) {
       ctx.stroke();
     }
 
-    // Draw wind direction indicator on ground
+    // === Wind gradient ===
     if (simState.environment) {
       const angle = simState.environment.windAngle;
       const cx = size / 2, cy = size / 2;
       const windGrad = ctx.createRadialGradient(
         cx + Math.cos(angle) * size * 0.3,
         cy + Math.sin(angle) * size * 0.3,
-        0,
-        cx, cy, size * 0.5
+        0, cx, cy, size * 0.5
       );
-      windGrad.addColorStop(0, 'rgba(76, 201, 240, 0.06)');
+      windGrad.addColorStop(0, 'rgba(76, 201, 240, 0.04)');
       windGrad.addColorStop(1, 'transparent');
       ctx.fillStyle = windGrad;
       ctx.fillRect(0, 0, size, size);
     }
 
-    // Draw dropped eggs
-    for (const egg of (simState.droppedEggs || [])) {
+    // === Draw dropped eggs ===
+    const droppedEggs = simState.droppedEggs || [];
+    for (let i = 0; i < droppedEggs.length; i++) {
+      const egg = droppedEggs[i];
       if (egg.state === EGG_STATE.EXPOSED) {
-        const ex = egg.x * CELL + CELL / 2;
-        const ey = egg.y * CELL + CELL / 2;
-        const progress = egg.exposureProgress;
-
-        // Pulsing glow
-        ctx.beginPath();
-        ctx.arc(ex, ey, CELL * 0.6, 0, Math.PI * 2);
-        const pulseAlpha = 0.3 + Math.sin(Date.now() * 0.005) * 0.2;
-        ctx.fillStyle = `rgba(248, 150, 30, ${pulseAlpha})`;
-        ctx.fill();
-
-        // Egg shape
-        ctx.beginPath();
-        ctx.ellipse(ex, ey, 3, 4, 0, 0, Math.PI * 2);
-        const eggR = Math.round(248 * (1 - progress) + 200 * progress);
-        const eggG = Math.round(150 * (1 - progress) + 60 * progress);
-        const eggB = Math.round(30 * (1 - progress) + 60 * progress);
-        ctx.fillStyle = `rgb(${eggR},${eggG},${eggB})`;
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
+        ctx.drawImage(sprites.droppedEgg, egg.x * CELL, egg.y * CELL);
       }
     }
 
-    // Draw penguins
-    for (const p of simState.penguins) {
+    // === Draw penguins ===
+    const penguins = simState.penguins;
+    for (let i = 0; i < penguins.length; i++) {
+      const p = penguins[i];
       if (p.state === PENGUIN_STATE.DEAD) continue;
+
+      const key = getSpriteKey(p);
+      const sprite = sprites[key];
+      if (!sprite) continue;
+
       const px = p.x * CELL;
       const py = p.y * CELL;
-      const alpha = energyToAlpha(p.energy);
-      const color = tempToColor(p.bodyTemp);
 
-      // Body
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.roundRect(px + 1, py + 1, CELL - 2, CELL - 2, 2);
-      ctx.fill();
+      // Alpha based on energy
+      const alpha = 0.5 + (p.energy / 100) * 0.5;
+      if (alpha < 0.99) {
+        ctx.globalAlpha = alpha;
+      }
 
-      // Border glow for border penguins
+      ctx.drawImage(sprite, px, py);
+
+      // Border glow (subtle cyan outline for border penguins)
       if (p.isBorder) {
-        ctx.strokeStyle = 'rgba(76, 201, 240, 0.4)';
-        ctx.lineWidth = 0.8;
+        ctx.strokeStyle = 'rgba(76, 201, 240, 0.25)';
+        ctx.lineWidth = 0.6;
+        ctx.beginPath();
+        ctx.arc(px + HALF, py + HALF, CELL * 0.45, 0, Math.PI * 2);
         ctx.stroke();
       }
 
-      // Egg indicator
-      if (p.hasEgg) {
-        ctx.fillStyle = '#ffd166';
-        ctx.beginPath();
-        ctx.ellipse(px + CELL / 2, py + CELL / 2 + 2, 2, 2.5, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Searching state - flashing outline
+      // Searching animation (pulsing ring, drawn live for animation)
       if (p.state === PENGUIN_STATE.SEARCHING_EGG) {
-        const flash = Math.sin(Date.now() * 0.01) > 0;
-        if (flash) {
-          ctx.strokeStyle = '#f8961e';
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(px + 0.5, py + 0.5, CELL - 1, CELL - 1);
-        }
+        const pulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.008);
+        ctx.strokeStyle = `rgba(248, 150, 30, ${pulse})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(px + HALF, py + HALF, CELL * 0.55, 0, Math.PI * 2);
+        ctx.stroke();
       }
 
       ctx.globalAlpha = 1;
     }
 
-    // Snow particles effect
+    // === Snow particles (reduced count) ===
     const time = Date.now() * 0.001;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-    for (let i = 0; i < 30; i++) {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+    for (let i = 0; i < 20; i++) {
       const sx = ((Math.sin(time + i * 73) * 0.5 + 0.5) * size + time * 10 * (i % 3 + 1)) % size;
       const sy = ((Math.cos(time * 0.7 + i * 37) * 0.5 + 0.5) * size + time * 15 * (i % 2 + 1)) % size;
       ctx.beginPath();
-      ctx.arc(sx, sy, 1, 0, Math.PI * 2);
+      ctx.arc(sx, sy, 0.8, 0, Math.PI * 2);
       ctx.fill();
     }
   }, [simState]);
 
+  useEffect(() => {
+    draw();
+  }, [draw]);
+
   const env = simState?.environment;
-  const colony = simState?.colony;
 
   return (
     <div className="canvas-container">
@@ -197,19 +336,19 @@ export default function SimulationCanvas({ simState }) {
 
       <div className="legend" style={{ flexWrap: 'wrap', gap: '0.75rem', justifyContent: 'center' }}>
         <div style={{ width: '100%', textAlign: 'center', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-          Guía de Temperatura de los Pingüinos:
+          Estado visual de cada pingüino:
         </div>
         <div className="legend__item" style={{ fontSize: '0.75rem' }}>
-          <div className="legend__dot" style={{ background: 'rgb(0, 100, 255)' }} />
-          Frío Extremo (≤ 30°C)
+          <div className="legend__dot" style={{ background: '#0d0d14', border: '1px solid #555' }} />
+          Interior (cálido)
         </div>
         <div className="legend__item" style={{ fontSize: '0.75rem' }}>
-          <div className="legend__dot" style={{ background: 'rgb(80, 80, 80)' }} />
-          Riesgo (34°C)
+          <div className="legend__dot" style={{ background: '#1a1a2e', border: '1px solid rgba(76,201,240,0.4)' }} />
+          Borde (expuesto)
         </div>
         <div className="legend__item" style={{ fontSize: '0.75rem' }}>
-          <div className="legend__dot" style={{ background: 'rgb(255, 170, 0)' }} />
-          Óptimo (≥ 38°C)
+          <div className="legend__dot" style={{ background: '#1a3a5c' }} />
+          Frío Crítico (≤ 32°C)
         </div>
         
         <div style={{ width: '100%', height: '1px', background: 'var(--border-subtle)', margin: '4px 0' }} />
@@ -223,8 +362,8 @@ export default function SimulationCanvas({ simState }) {
           Huevo expuesto
         </div>
         <div className="legend__item">
-          <div className="legend__dot" style={{ background: 'rgba(255,255,255,0.2)' }} />
-          Nieve
+          <div className="legend__dot" style={{ background: 'rgba(248,150,30,0.5)', borderRadius: '50%', border: '1px solid #f8961e' }} />
+          Buscando huevo
         </div>
       </div>
     </div>

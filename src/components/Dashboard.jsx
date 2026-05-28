@@ -18,6 +18,7 @@ export default function Dashboard({ simState }) {
 
   const { colony, eggs, environment } = simState;
   const phase = environment.phase;
+  const currentPhaseList = environment.phaseList || PHASE_LIST;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -32,7 +33,7 @@ export default function Dashboard({ simState }) {
           <span className="phase-label__month">{phase.month}</span>
         </div>
         <div className="phase-indicator">
-          {PHASE_LIST.map((p, i) => {
+          {currentPhaseList.map((p, i) => {
             let fill = 0;
             if (i < environment.phaseIndex) fill = 100;
             else if (i === environment.phaseIndex) fill = environment.phaseProgress * 100;

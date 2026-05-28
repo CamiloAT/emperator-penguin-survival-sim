@@ -1,44 +1,127 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Bird } from 'lucide-react'; // Bird can works as a penguin replacement
 import SimulationCanvas from './components/SimulationCanvas.jsx';
 import ControlPanel from './components/ControlPanel.jsx';
 import Dashboard from './components/Dashboard.jsx';
 import Charts from './components/Charts.jsx';
 import ResultsModal from './components/ResultsModal.jsx';
+import SettingsModal from './components/SettingsModal.jsx';
 import { SimulationEngine } from './simulation/Engine.js';
 
-const DEFAULT_CONFIG = {
+// Premium Penguin Logo component
+function PenguinLogo({ size = 36 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+      {/* Body silhouette */}
+      <ellipse cx="24" cy="26" rx="12" ry="16" fill="#0d0d14"/>
+      {/* Belly */}
+      <ellipse cx="24" cy="29" rx="7" ry="11" fill="#e8e0d0"/>
+      {/* Head */}
+      <circle cx="24" cy="12" r="8" fill="#0d0d14"/>
+      {/* Orange ear patches */}
+      <ellipse cx="17.5" cy="14" rx="2.5" ry="4" transform="rotate(-15 17.5 14)" fill="#f0a030"/>
+      <ellipse cx="30.5" cy="14" rx="2.5" ry="4" transform="rotate(15 30.5 14)" fill="#f0a030"/>
+      {/* Eyes */}
+      <circle cx="21" cy="11" r="1.5" fill="white"/>
+      <circle cx="27" cy="11" r="1.5" fill="white"/>
+      <circle cx="21.3" cy="11.2" r="0.7" fill="#111"/>
+      <circle cx="27.3" cy="11.2" r="0.7" fill="#111"/>
+      {/* Beak */}
+      <path d="M22.5 14.5 L24 17.5 L25.5 14.5 Z" fill="#e87a20"/>
+      {/* Feet */}
+      <ellipse cx="20" cy="42" rx="3" ry="1.5" fill="#e87a20"/>
+      <ellipse cx="28" cy="42" rx="3" ry="1.5" fill="#e87a20"/>
+      {/* Wings */}
+      <path d="M12 22 Q10 30 14 38" stroke="#1a1a2e" strokeWidth="3" strokeLinecap="round" fill="none"/>
+      <path d="M36 22 Q38 30 34 38" stroke="#1a1a2e" strokeWidth="3" strokeLinecap="round" fill="none"/>
+    </svg>
+  );
+}
+
+export const DEFAULT_CONFIG = {
   colonySize: 80,
   bodyTemp: 38,
   energy: 100,
   eggLossProb: 0.005,
   criticalTemp: 34,
-  searchRadius: 2
+  searchRadius: 2,
+
+  // Physiology — tuned for ~80% survival over 92 days
+  hypothermiaTemp: 28,
+  energyDecayBase: 0.0002,
+  energyDecayBorder: 0.0008,
+  maxThermogenesis: 0.008,
+  thermogenesisEnergyFactor: 0.05,
+
+  // Thermodynamics
+  heatTransferRate: 0.15,
+  heatLossInterior: 0.0002,
+  heatLossBorderBase: 0.002,
+
+  // Eggs
+  eggLossProbBorder: 0.015,
+  eggIncubationTemp: 36,
+  eggSearchTimeLimit: 180,
+  gridSize: 40,
+
+  // Phase 0: Inicio Incubación
+  phase0Duration: 30,
+  phase0TempMin: -25,
+  phase0TempMax: -35,
+  phase0WindMin: 40,
+  phase0WindMax: 80,
+  phase0EnergyMultiplier: 1.0,
+
+  // Phase 1: Invierno Profundo
+  phase1Duration: 31,
+  phase1TempMin: -40,
+  phase1TempMax: -60,
+  phase1WindMin: 80,
+  phase1WindMax: 200,
+  phase1EnergyMultiplier: 1.5,
+
+  // Phase 2: Pre-Eclosión
+  phase2Duration: 31,
+  phase2TempMin: -30,
+  phase2TempMax: -20,
+  phase2WindMin: 50,
+  phase2WindMax: 60,
+  phase2EnergyMultiplier: 1.1
 };
 
 export default function App() {
   const [config, setConfig] = useState(DEFAULT_CONFIG);
   const [simState, setSimState] = useState(null);
   const [speed, setSpeed] = useState(60);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showResultsModal, setShowResultsModal] = useState(false);
   const engineRef = useRef(null);
   const animRef = useRef(null);
   const runningRef = useRef(false);
 
-  const initEngine = useCallback(() => {
+  const initEngine = useCallback((cfg = config) => {
+    runningRef.current = false;
+    if (animRef.current) cancelAnimationFrame(animRef.current);
     const engine = new SimulationEngine({
-      ...config,
+      ...cfg,
       stepsPerTick: speed
     });
     const state = engine.init();
     engineRef.current = engine;
     setSimState(state);
     return engine;
-  }, [config.colonySize, speed]);
+  }, [config, speed]);
 
   // Initialize on mount
   useEffect(() => {
     initEngine();
   }, []);
+
+  // Show results modal when finished
+  useEffect(() => {
+    if (simState?.finished) {
+      setShowResultsModal(true);
+    }
+  }, [simState?.finished]);
 
   const loop = useCallback(() => {
     if (!runningRef.current || !engineRef.current) return;
@@ -74,8 +157,25 @@ export default function App() {
   const handleReset = useCallback(() => {
     runningRef.current = false;
     if (animRef.current) cancelAnimationFrame(animRef.current);
+    setShowResultsModal(false);
     initEngine();
   }, [initEngine]);
+
+  const handleResetDefaults = useCallback(() => {
+    runningRef.current = false;
+    if (animRef.current) cancelAnimationFrame(animRef.current);
+    setShowResultsModal(false);
+    setConfig(DEFAULT_CONFIG);
+    initEngine(DEFAULT_CONFIG);
+  }, []);
+
+  const handleForceEnd = useCallback(() => {
+    if (!engineRef.current) return;
+    runningRef.current = false;
+    if (animRef.current) cancelAnimationFrame(animRef.current);
+    const state = engineRef.current.forceFinish();
+    setSimState(state);
+  }, []);
 
   const handleSpeedChange = useCallback((newSpeed) => {
     setSpeed(newSpeed);
@@ -84,13 +184,24 @@ export default function App() {
     }
   }, []);
 
+  const handleSaveSettings = useCallback((newConfig) => {
+    setConfig(newConfig);
+    runningRef.current = false;
+    if (animRef.current) cancelAnimationFrame(animRef.current);
+    initEngine(newConfig);
+  }, [speed]);
+
+  const totalDays = simState?.environment?.phaseList
+    ? simState.environment.phaseList.reduce((s, p) => s + p.durationDays, 0)
+    : 92;
+
   return (
     <div className="app-container">
       {/* Header */}
       <header className="app-header">
         <div className="app-header__left">
-          <div className="app-header__icon" style={{ backgroundColor: 'var(--accent-orange)' }}>
-            <Bird size={24} color="white" strokeWidth={2} />
+          <div className="app-header__icon-wrapper">
+            <PenguinLogo size={36} />
           </div>
           <div>
             <h1 className="app-header__title">Pingüinos Emperador — Supervivencia Antártica</h1>
@@ -99,18 +210,18 @@ export default function App() {
             </p>
           </div>
         </div>
-        {simState?.environment && (
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          {simState?.environment && (
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--accent-cyan)' }}>
-                Día {simState.day} / 92
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--accent-cyan)', fontWeight: 700 }}>
+                Día {simState.day} / {totalDays}
               </div>
               <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
                 Paso {simState.step.toLocaleString()}
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </header>
 
       {/* Main Content */}
@@ -123,9 +234,13 @@ export default function App() {
           onStart={handleStart}
           onPause={handlePause}
           onReset={handleReset}
+          onResetDefaults={handleResetDefaults}
+          onForceEnd={handleForceEnd}
           onSpeedChange={handleSpeedChange}
           speed={speed}
           finished={simState?.finished}
+          onOpenSettings={() => setShowSettingsModal(true)}
+          onShowResults={() => setShowResultsModal(true)}
         />
 
         {/* Center: Simulation Canvas + Charts */}
@@ -139,7 +254,21 @@ export default function App() {
       </div>
 
       {/* Results Modal */}
-      <ResultsModal simState={simState} onReset={handleReset} />
+      <ResultsModal 
+        isOpen={showResultsModal}
+        onClose={() => setShowResultsModal(false)}
+        simState={simState} 
+        onReset={handleReset} 
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        config={config}
+        onSave={handleSaveSettings}
+        onForceEnd={handleForceEnd}
+      />
     </div>
   );
 }

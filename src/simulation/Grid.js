@@ -1,9 +1,13 @@
 /**
  * Grid - 2D spatial grid for agent placement
+ * Optimized with static DIRS array
  */
 import { GRID_SIZE } from './constants.js';
 
 export class Grid {
+  // Static directions array shared by all instances (avoids per-call allocations)
+  static DIRS = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+
   constructor(size = GRID_SIZE) {
     this.size = size;
     this.cells = new Array(size * size).fill(null);
@@ -38,11 +42,10 @@ export class Grid {
 
   getNeighbors(x, y) {
     const neighbors = [];
-    const dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
-    for (const [dx, dy] of dirs) {
-      const nx = x + dx, ny = y + dy;
+    for (let d = 0; d < 8; d++) {
+      const nx = x + Grid.DIRS[d][0], ny = y + Grid.DIRS[d][1];
       if (this.inBounds(nx, ny)) {
-        const cell = this.get(nx, ny);
+        const cell = this.cells[ny * this.size + nx];
         if (cell) neighbors.push(cell);
       }
     }
@@ -51,9 +54,8 @@ export class Grid {
 
   getEmptyNeighbors(x, y) {
     const empty = [];
-    const dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
-    for (const [dx, dy] of dirs) {
-      const nx = x + dx, ny = y + dy;
+    for (let d = 0; d < 8; d++) {
+      const nx = x + Grid.DIRS[d][0], ny = y + Grid.DIRS[d][1];
       if (this.isEmpty(nx, ny)) {
         empty.push({ x: nx, y: ny });
       }
@@ -80,7 +82,7 @@ export class Grid {
     let sumX = 0, sumY = 0, count = 0;
     for (let y = 0; y < this.size; y++) {
       for (let x = 0; x < this.size; x++) {
-        if (this.get(x, y)) {
+        if (this.cells[y * this.size + x]) {
           sumX += x; sumY += y; count++;
         }
       }
@@ -98,7 +100,7 @@ export class Grid {
     let maxDist = 0;
     for (let y = 0; y < this.size; y++) {
       for (let x = 0; x < this.size; x++) {
-        if (this.get(x, y)) {
+        if (this.cells[y * this.size + x]) {
           const dist = this.distToCenter(x, y, center);
           if (dist > maxDist) maxDist = dist;
         }

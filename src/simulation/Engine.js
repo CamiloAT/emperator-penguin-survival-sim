@@ -1,19 +1,20 @@
 /**
  * Simulation Engine
  * Main loop controlling the ABM simulation
+ * Optimized: avoids per-frame allocations, caches values, Fisher-Yates shuffle
  */
 import { Grid } from './Grid.js';
 import { Penguin, PENGUIN_STATE, resetPenguinIdCounter } from './Penguin.js';
 import { EGG_STATE, resetEggIdCounter } from './Egg.js';
 import { Environment } from './Environment.js';
-import { GRID_SIZE, EGG_SEARCH_RADIUS, MINUTES_PER_DAY, PHASE_LIST } from './constants.js';
+import { GRID_SIZE, MINUTES_PER_DAY } from './constants.js';
 
 export class SimulationEngine {
   constructor(config = {}) {
     this.config = config;
     this.colonySize = config.colonySize || 80;
     this.gridSize = config.gridSize || GRID_SIZE;
-    this.stepsPerTick = config.stepsPerTick || 60; // How many sim steps per animation frame
+    this.stepsPerTick = config.stepsPerTick || 60;
     this.grid = null;
     this.penguins = [];
     this.env = null;
@@ -27,19 +28,77 @@ export class SimulationEngine {
       eggsRecovered: 0,
       eggsFrozen: 0,
       penguinsDead: 0,
+      deathsByHypothermia: 0,
+      deathsByStarvation: 0,
       totalEggsDropped: 0
     };
-    this.droppedEggs = []; // Eggs on the ground
-    this.totalSteps = PHASE_LIST.reduce((s, p) => s + p.durationDays, 0) * MINUTES_PER_DAY;
+    this.droppedEggs = [];
+
+    // Cache config values for hot loop (avoids ?? per step)
+    this.cfg = {
+      heatTransferRate: config.heatTransferRate ?? 0.15,
+      maxThermogenesis: config.maxThermogenesis ?? 0.008,
+      thermogenesisEnergyFactor: config.thermogenesisEnergyFactor ?? 0.05,
+      hypothermiaTemp: config.hypothermiaTemp ?? 28,
+      bodyTemp: config.bodyTemp ?? 38,
+      criticalTemp: config.criticalTemp ?? 34,
+      eggLossProb: config.eggLossProb ?? 0.005,
+      eggLossProbBorder: config.eggLossProbBorder ?? 0.015,
+      energyDecayBase: config.energyDecayBase ?? 0.0002,
+      energyDecayBorder: config.energyDecayBorder ?? 0.0008,
+      heatLossBorderBase: config.heatLossBorderBase ?? 0.002,
+      heatLossInterior: config.heatLossInterior ?? 0.0002,
+    };
+
+    // Build dynamic phase list
+    this.updatePhaseList();
+    const totalDays = this.phaseList.reduce((s, p) => s + p.durationDays, 0);
+    this.totalSteps = totalDays * MINUTES_PER_DAY;
+  }
+
+  updatePhaseList() {
+    const c = this.config;
+    this.phaseList = [
+      {
+        id: 0,
+        name: 'Inicio de Incubación',
+        month: 'Junio',
+        tempRange: [c?.phase0TempMin ?? -25, c?.phase0TempMax ?? -35],
+        windRange: [c?.phase0WindMin ?? 40, c?.phase0WindMax ?? 80],
+        durationDays: c?.phase0Duration ?? 30,
+        energyMultiplier: c?.phase0EnergyMultiplier ?? 1.0,
+        description: 'Frío moderado, reservas energéticas altas'
+      },
+      {
+        id: 1,
+        name: 'Invierno Profundo',
+        month: 'Julio',
+        tempRange: [c?.phase1TempMax ?? -60, c?.phase1TempMin ?? -40],
+        windRange: [c?.phase1WindMin ?? 80, c?.phase1WindMax ?? 200],
+        durationDays: c?.phase1Duration ?? 31,
+        energyMultiplier: c?.phase1EnergyMultiplier ?? 1.5,
+        description: 'Frío extremo y vientos máximos, reservas críticas'
+      },
+      {
+        id: 2,
+        name: 'Pre-Eclosión',
+        month: 'Agosto',
+        tempRange: [c?.phase2TempMax ?? -30, c?.phase2TempMin ?? -20],
+        windRange: [c?.phase2WindMin ?? 50, c?.phase2WindMax ?? 60],
+        durationDays: c?.phase2Duration ?? 31,
+        energyMultiplier: c?.phase2EnergyMultiplier ?? 1.1,
+        description: 'Temperaturas en ascenso, energía límite'
+      }
+    ];
   }
 
   /** Initialize the simulation */
   init() {
     resetPenguinIdCounter();
     resetEggIdCounter();
-    
+
     this.grid = new Grid(this.gridSize);
-    this.env = new Environment();
+    this.env = new Environment(this.config);
     this.penguins = [];
     this.step = 0;
     this.running = false;
@@ -52,17 +111,19 @@ export class SimulationEngine {
       eggsRecovered: 0,
       eggsFrozen: 0,
       penguinsDead: 0,
+      deathsByHypothermia: 0,
+      deathsByStarvation: 0,
       totalEggsDropped: 0
     };
 
-    // Disperse penguins randomly within a larger area (circle) so they gather naturally when cold
+    // Place penguins in a tight circle (start huddled)
     const cx = Math.floor(this.gridSize / 2);
     const cy = Math.floor(this.gridSize / 2);
-    const scatterRadius = this.gridSize * 0.4;
+    const scatterRadius = Math.min(this.gridSize * 0.25, Math.sqrt(this.colonySize) * 1.2);
 
     let placed = 0;
     let attempts = 0;
-    while (placed < this.colonySize && attempts < this.colonySize * 10) {
+    while (placed < this.colonySize && attempts < this.colonySize * 20) {
       attempts++;
       const angle = Math.random() * Math.PI * 2;
       const r = Math.random() * scatterRadius;
@@ -72,17 +133,31 @@ export class SimulationEngine {
       y = Math.max(1, Math.min(this.gridSize - 2, y));
 
       if (this.grid.isEmpty(x, y)) {
-        const p = new Penguin(x, y);
-        // Aplica parámetros iniciales según config
-        p.bodyTemp = this.config?.bodyTemp || p.bodyTemp;
-        p.energy = this.config?.energy || p.energy;
+        const p = new Penguin(x, y, this.config);
         this.penguins.push(p);
         this.grid.set(x, y, p);
         placed++;
       }
-    }    this.updateBorderStatus();
+    }
+    this.updateBorderStatus();
     this.env.update(0);
 
+    return this.getState();
+  }
+
+  /** Fisher-Yates in-place shuffle (avoids sort allocation) */
+  shuffleArray(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = (Math.random() * (i + 1)) | 0;
+      const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+  }
+
+  /** Force-finish the simulation */
+  forceFinish() {
+    this.finished = true;
+    this.running = false;
+    this.addEvent('simulation_end', 'La simulación fue detenida manualmente.');
     return this.getState();
   }
 
@@ -90,10 +165,11 @@ export class SimulationEngine {
   tick() {
     if (this.finished) return this.getState();
 
+    const cfg = this.cfg;
+
     for (let s = 0; s < this.stepsPerTick; s++) {
       this.step++;
-      
-      // Check if simulation is complete
+
       if (this.step >= this.totalSteps) {
         this.finished = true;
         this.running = false;
@@ -104,44 +180,105 @@ export class SimulationEngine {
       // 1. Update environment
       this.env.update(this.step);
 
-      // 2. Update border status
-      this.updateBorderStatus();
+      // 2. Update border status (every 10 steps for perf)
+      if (this.step % 10 === 0) {
+        this.updateBorderStatus();
+      }
 
       const center = this.grid.getCenter();
+      const phaseMultiplier = this.env.phaseEnergyMultiplier;
 
-      // 3. Process each penguin
-      const shuffled = [...this.penguins].sort(() => Math.random() - 0.5);
-      
-      for (const p of shuffled) {
+      // 3. Process each penguin (shuffle in-place)
+      this.shuffleArray(this.penguins);
+
+      for (let i = 0; i < this.penguins.length; i++) {
+        const p = this.penguins[i];
         if (!p.isAlive) continue;
 
         // a) Heat loss
-        const heatLoss = p.calculateHeatLoss(this.env.temperature, this.env.windSpeed, this.env.windDirection);
+        const windChill = this.env.windSpeed * 0.01;
+        let heatLoss;
+        if (p.isBorder) {
+          heatLoss = cfg.heatLossBorderBase + windChill * 0.003 + (p.bodyTemp - this.env.temperature) * 0.00005;
+        } else {
+          heatLoss = cfg.heatLossInterior + (p.bodyTemp - this.env.temperature) * 0.000005;
+        }
+
         const windEffect = this.env.getWindEffect(p.x, p.y, center.x, center.y);
-        p.bodyTemp -= heatLoss * (1 + windEffect * 0.5);
+        const totalHeatLoss = heatLoss * (1 + windEffect * 0.3);
 
-        // b) Heat transfer from neighbors
-        const neighbors = this.grid.getNeighbors(p.x, p.y);
-        p.neighborCount = neighbors.length;
-        p.applyHeatTransfer(neighbors);
+        // b) Heat transfer from neighbors (inline for perf)
+        let heatGain = 0;
+        let nCount = 0;
+        const dirs = Grid.DIRS;
+        for (let d = 0; d < 8; d++) {
+          const nx = p.x + dirs[d][0], ny = p.y + dirs[d][1];
+          if (nx >= 0 && nx < this.gridSize && ny >= 0 && ny < this.gridSize) {
+            const neighbor = this.grid.cells[ny * this.gridSize + nx];
+            if (neighbor && neighbor.isAlive) {
+              heatGain += (neighbor.bodyTemp - p.bodyTemp) * cfg.heatTransferRate * 0.1;
+              nCount++;
+            }
+          }
+        }
+        const avgHeatGain = nCount > 0 ? heatGain / nCount : 0;
 
-        // c) Energy consumption
-        p.updateEnergy(this.env.phaseEnergyMultiplier);
+        // c) Active Metabolic Thermogenesis (Homeostasis)
+        const netHeatExchange = totalHeatLoss - avgHeatGain;
+        let metabolicHeat = 0;
+        let thermogenesisEnergyCost = 0;
 
-        // d) Check death
-        if (!p.isAlive) {
+        if (p.energy > 0 && netHeatExchange > 0) {
+          // Thermogenesis capacity scales gently with energy (sqrt curve, not linear)
+          const capacityFraction = Math.sqrt(p.energy / 100);
+          metabolicHeat = Math.min(netHeatExchange, cfg.maxThermogenesis * capacityFraction);
+          thermogenesisEnergyCost = metabolicHeat * cfg.thermogenesisEnergyFactor;
+        }
+
+        // d) Update body temperature
+        p.bodyTemp += metabolicHeat - netHeatExchange;
+        if (p.bodyTemp > cfg.bodyTemp) p.bodyTemp = cfg.bodyTemp;
+
+        // e) Energy consumption (base metabolism + thermogenesis cost)
+        const baseDecay = p.isBorder ? cfg.energyDecayBorder : cfg.energyDecayBase;
+        const thermoStress = p.bodyTemp < cfg.bodyTemp ? (cfg.bodyTemp - p.bodyTemp) * 0.00002 : 0;
+        const totalDecay = (baseDecay + thermoStress) * phaseMultiplier + thermogenesisEnergyCost;
+        p.energy -= totalDecay;
+        p.fatReserve -= totalDecay * 0.8;
+
+        // f) Check death: Hypothermia
+        if (p.bodyTemp <= cfg.hypothermiaTemp) {
+          p.energy = Math.max(0, p.energy);
+          p.die();
           this.stats.penguinsDead++;
+          this.stats.deathsByHypothermia++;
           this.grid.clear(p.x, p.y);
           if (p.egg && p.egg.state === EGG_STATE.EXPOSED) {
             this.droppedEggs.push(p.egg);
           }
           if (this.step % MINUTES_PER_DAY < this.stepsPerTick) {
-            this.addEvent('penguin_death', `Pingüino #${p.id} ha muerto por inanición. Día ${this.env.totalDay}.`);
+            this.addEvent('penguin_death', `Pingüino #${p.id} ha muerto por hipotermia (${p.bodyTemp.toFixed(1)}°C). Día ${this.env.totalDay}.`);
           }
           continue;
         }
 
-        // e) If searching for egg
+        // g) Check death: Starvation
+        if (p.energy <= 0) {
+          p.energy = 0;
+          p.die();
+          this.stats.penguinsDead++;
+          this.stats.deathsByStarvation++;
+          this.grid.clear(p.x, p.y);
+          if (p.egg && p.egg.state === EGG_STATE.EXPOSED) {
+            this.droppedEggs.push(p.egg);
+          }
+          if (this.step % MINUTES_PER_DAY < this.stepsPerTick) {
+            this.addEvent('penguin_death', `Pingüino #${p.id} ha muerto por inanición (energía agotada). Día ${this.env.totalDay}.`);
+          }
+          continue;
+        }
+
+        // h) If searching for egg
         if (p.state === PENGUIN_STATE.SEARCHING_EGG) {
           p.timeSearching++;
           if (p.tryRecoverEgg(this.grid)) {
@@ -149,36 +286,46 @@ export class SimulationEngine {
             this.droppedEggs = this.droppedEggs.filter(e => e.id !== p.egg.id);
             this.addEvent('egg_recovered', `Pingüino #${p.id} recuperó su huevo exitosamente.`);
           } else {
-            // Move toward egg
             this.moveToward(p, p.egg.x, p.egg.y);
           }
           continue;
         }
 
-        // f) Movement - huddle rotation
+        // i) Movement - huddle rotation
         p.moved = false;
-        const criticalTemp = this.config?.criticalTemp || 34.0;
-        if (p.shouldMoveInward(criticalTemp)) {
+        if (p.isBorder && p.bodyTemp < cfg.criticalTemp && p.state === PENGUIN_STATE.NORMAL) {
           this.moveTowardCenter(p, center);
           p.moved = true;
         }
 
-        // g) Stochastic egg loss
-        const eggLossProb = this.config?.eggLossProb || 0.005;
-        if (p.moved && p.checkEggLoss(true, eggLossProb, eggLossProb * 3)) {
-          p.egg.drop(p.x, p.y, this.env.temperature, this.env.windSpeed);
-          this.droppedEggs.push(p.egg);
-          this.stats.totalEggsDropped++;
-          this.stats.eggsLost++;
-          this.addEvent('egg_lost', `¡Pingüino #${p.id} perdió su huevo! Temp: ${this.env.temperature.toFixed(1)}°C`);
+        // j) Stochastic egg loss
+        if (p.moved && p.hasEgg && p.egg && p.egg.state === EGG_STATE.STABLE) {
+          const prob = p.isBorder ? cfg.eggLossProbBorder : cfg.eggLossProb;
+          if (Math.random() < prob) {
+            p.hasEgg = false;
+            p.egg.drop(p.x, p.y, this.env.temperature, this.env.windSpeed);
+            p.state = PENGUIN_STATE.SEARCHING_EGG;
+            p.searchTarget = { x: p.x, y: p.y };
+            this.droppedEggs.push(p.egg);
+            this.stats.totalEggsDropped++;
+            this.stats.eggsLost++;
+            this.addEvent('egg_lost', `¡Pingüino #${p.id} perdió su huevo! Temp: ${this.env.temperature.toFixed(1)}°C`);
+          }
         }
 
-        // h) Track state
-        p.trackState();
+        // k) Track state
+        if (p.state === PENGUIN_STATE.SEARCHING_EGG) {
+          p.timeSearching++;
+        } else if (p.isBorder) {
+          p.timeBorder++;
+        } else {
+          p.timeInterior++;
+        }
       }
 
       // 4. Update exposed eggs
-      for (const egg of this.droppedEggs) {
+      for (let i = this.droppedEggs.length - 1; i >= 0; i--) {
+        const egg = this.droppedEggs[i];
         if (egg.state === EGG_STATE.EXPOSED) {
           egg.calculateMaxExposure(this.env.temperature, this.env.windSpeed);
           if (egg.updateExposure(1)) {
@@ -187,10 +334,12 @@ export class SimulationEngine {
             this.addEvent('egg_frozen', `Un huevo se congeló en el hielo. Exposición total agotada.`);
           }
         }
+        if (egg.state !== EGG_STATE.EXPOSED) {
+          this.droppedEggs.splice(i, 1);
+        }
       }
-      this.droppedEggs = this.droppedEggs.filter(e => e.state === EGG_STATE.EXPOSED);
 
-      // 5. Record stats every simulated hour (60 steps)
+      // 5. Record stats every simulated hour
       if (this.step % 60 === 0) {
         this.recordStats();
       }
@@ -201,13 +350,20 @@ export class SimulationEngine {
 
   /** Update which penguins are on the border vs interior */
   updateBorderStatus() {
-    for (const p of this.penguins) {
+    for (let i = 0; i < this.penguins.length; i++) {
+      const p = this.penguins[i];
       if (!p.isAlive) continue;
-      const neighbors = this.grid.getNeighbors(p.x, p.y);
-      const aliveNeighbors = neighbors.filter(n => n.isAlive);
-      // A penguin is on the border if it has < 6 neighbors (out of 8 possible)
-      p.isBorder = aliveNeighbors.length < 6;
-      p.neighborCount = aliveNeighbors.length;
+      let aliveCount = 0;
+      const dirs = Grid.DIRS;
+      for (let d = 0; d < 8; d++) {
+        const nx = p.x + dirs[d][0], ny = p.y + dirs[d][1];
+        if (nx >= 0 && nx < this.gridSize && ny >= 0 && ny < this.gridSize) {
+          const cell = this.grid.cells[ny * this.gridSize + nx];
+          if (cell && cell.isAlive) aliveCount++;
+        }
+      }
+      p.isBorder = aliveCount < 6;
+      p.neighborCount = aliveCount;
     }
   }
 
@@ -215,13 +371,10 @@ export class SimulationEngine {
   moveTowardCenter(penguin, center) {
     const dx = center.x - penguin.x;
     const dy = center.y - penguin.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < 1) return;
+    if (dx * dx + dy * dy < 1) return;
 
     const stepX = Math.sign(dx);
     const stepY = Math.sign(dy);
-
-    // Try to move closer to center
     const candidates = [
       { x: penguin.x + stepX, y: penguin.y + stepY },
       { x: penguin.x + stepX, y: penguin.y },
@@ -242,7 +395,6 @@ export class SimulationEngine {
     for (const pos of candidates) {
       const other = this.grid.get(pos.x, pos.y);
       if (other && other.isAlive && !other.isBorder && other.bodyTemp > penguin.bodyTemp + 1) {
-        // Swap positions
         this.grid.set(penguin.x, penguin.y, other);
         this.grid.set(pos.x, pos.y, penguin);
         const tmpX = penguin.x, tmpY = penguin.y;
@@ -260,7 +412,6 @@ export class SimulationEngine {
     const dy = ty - penguin.y;
     const stepX = dx === 0 ? 0 : Math.sign(dx);
     const stepY = dy === 0 ? 0 : Math.sign(dy);
-
     const candidates = [
       { x: penguin.x + stepX, y: penguin.y + stepY },
       { x: penguin.x + stepX, y: penguin.y },
@@ -280,29 +431,31 @@ export class SimulationEngine {
 
   /** Record statistics at current step */
   recordStats() {
-    const alive = this.penguins.filter(p => p.isAlive);
-    const avgTemp = alive.length > 0 
-      ? alive.reduce((s, p) => s + p.bodyTemp, 0) / alive.length 
-      : 0;
-    const avgEnergy = alive.length > 0
-      ? alive.reduce((s, p) => s + p.energy, 0) / alive.length
-      : 0;
-    const viableEggs = this.penguins.filter(p => p.hasEgg && p.egg.state === EGG_STATE.STABLE).length;
-    const borderCount = alive.filter(p => p.isBorder).length;
+    let aliveCount = 0, sumTemp = 0, sumEnergy = 0, borderCount = 0, viableEggs = 0;
+    for (let i = 0; i < this.penguins.length; i++) {
+      const p = this.penguins[i];
+      if (p.isAlive) {
+        aliveCount++;
+        sumTemp += p.bodyTemp;
+        sumEnergy += p.energy;
+        if (p.isBorder) borderCount++;
+      }
+      if (p.hasEgg && p.egg && p.egg.state === EGG_STATE.STABLE) viableEggs++;
+    }
 
     this.stats.history.push({
       step: this.step,
       day: this.env.totalDay,
       hour: Math.floor((this.step % MINUTES_PER_DAY) / 60),
-      alive: alive.length,
+      alive: aliveCount,
       dead: this.stats.penguinsDead,
-      avgTemp: Math.round(avgTemp * 10) / 10,
-      avgEnergy: Math.round(avgEnergy * 10) / 10,
+      avgTemp: aliveCount > 0 ? Math.round((sumTemp / aliveCount) * 10) / 10 : 0,
+      avgEnergy: aliveCount > 0 ? Math.round((sumEnergy / aliveCount) * 10) / 10 : 0,
       temperature: Math.round(this.env.temperature * 10) / 10,
       windSpeed: Math.round(this.env.windSpeed),
       viableEggs,
       borderCount,
-      interiorCount: alive.length - borderCount,
+      interiorCount: aliveCount - borderCount,
       eggsFrozen: this.stats.eggsFrozen,
       phase: this.env.currentPhaseIndex
     });
@@ -317,7 +470,6 @@ export class SimulationEngine {
       message,
       timestamp: Date.now()
     });
-    // Keep only last 100 events
     if (this.events.length > 100) {
       this.events = this.events.slice(-100);
     }
@@ -325,8 +477,17 @@ export class SimulationEngine {
 
   /** Get current simulation state for rendering */
   getState() {
-    const alive = this.penguins.filter(p => p.isAlive);
-    const viableEggs = this.penguins.filter(p => p.hasEgg && p.egg.state === EGG_STATE.STABLE).length;
+    let aliveCount = 0, sumTemp = 0, sumEnergy = 0, borderCount = 0, viableEggs = 0;
+    for (let i = 0; i < this.penguins.length; i++) {
+      const p = this.penguins[i];
+      if (p.isAlive) {
+        aliveCount++;
+        sumTemp += p.bodyTemp;
+        sumEnergy += p.energy;
+        if (p.isBorder) borderCount++;
+      }
+      if (p.hasEgg && p.egg && p.egg.state === EGG_STATE.STABLE) viableEggs++;
+    }
 
     return {
       step: this.step,
@@ -342,18 +503,19 @@ export class SimulationEngine {
         phaseIndex: this.env.currentPhaseIndex,
         phaseProgress: this.env.phaseProgress,
         totalProgress: this.env.totalProgress,
-        dayInPhase: this.env.dayInPhase
+        dayInPhase: this.env.dayInPhase,
+        phaseList: this.env.phaseList
       } : null,
       colony: {
         total: this.colonySize,
-        alive: alive.length,
+        alive: aliveCount,
         dead: this.stats.penguinsDead,
-        avgTemp: alive.length > 0 ? alive.reduce((s, p) => s + p.bodyTemp, 0) / alive.length : 0,
-        avgEnergy: alive.length > 0 ? alive.reduce((s, p) => s + p.energy, 0) / alive.length : 0,
-        borderCount: alive.filter(p => p.isBorder).length,
-        interiorCount: alive.filter(p => !p.isBorder).length,
+        avgTemp: aliveCount > 0 ? sumTemp / aliveCount : 0,
+        avgEnergy: aliveCount > 0 ? sumEnergy / aliveCount : 0,
+        borderCount,
+        interiorCount: aliveCount - borderCount,
         viableEggs,
-        survivalRate: (alive.length / this.colonySize) * 100,
+        survivalRate: (aliveCount / this.colonySize) * 100,
         eggSurvivalRate: (viableEggs / this.colonySize) * 100
       },
       eggs: {
@@ -363,8 +525,8 @@ export class SimulationEngine {
         frozen: this.stats.eggsFrozen,
         recovered: this.stats.eggsRecovered,
         totalDropped: this.stats.totalEggsDropped,
-        rescueEfficiency: this.stats.totalEggsDropped > 0 
-          ? (this.stats.eggsRecovered / this.stats.totalEggsDropped) * 100 
+        rescueEfficiency: (this.stats.eggsRecovered + this.stats.eggsFrozen) > 0
+          ? (this.stats.eggsRecovered / (this.stats.eggsRecovered + this.stats.eggsFrozen)) * 100
           : 100
       },
       penguins: this.penguins,

@@ -118,6 +118,16 @@ body::before {
   box-shadow: var(--shadow-glow);
 }
 
+.app-header__icon-wrapper {
+  width: 46px; height: 46px;
+  background: linear-gradient(145deg, #1a2a3a 0%, #0a1520 60%, #162030 100%);
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 16px rgba(240, 160, 48, 0.15), inset 0 1px 0 rgba(255,255,255,0.05);
+  border: 1px solid rgba(240, 160, 48, 0.2);
+  flex-shrink: 0;
+}
+
 .app-header__title {
   font-size: 1.25rem;
   font-weight: 700;

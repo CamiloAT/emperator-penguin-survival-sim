@@ -1,7 +1,7 @@
 import { Award, Heart, Egg, Shield, RotateCcw } from 'lucide-react';
 
-export default function ResultsModal({ simState, onReset }) {
-  if (!simState?.finished) return null;
+export default function ResultsModal({ isOpen, onClose, simState, onReset }) {
+  if (!isOpen || !simState?.finished) return null;
 
   const { colony, eggs } = simState;
   const totalTime = simState.penguins.reduce((acc, p) => {
@@ -83,9 +83,14 @@ export default function ResultsModal({ simState, onReset }) {
           </div>
         </div>
 
-        <button className="btn btn--primary btn--full" onClick={onReset}>
-          <RotateCcw size={14} /> Nueva Simulación
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn btn--ghost btn--full" onClick={onClose}>
+            Ver Simulación
+          </button>
+          <button className="btn btn--primary btn--full" onClick={onReset}>
+            <RotateCcw size={14} /> Nueva Simulación
+          </button>
+        </div>
       </div>
     </div>
   );

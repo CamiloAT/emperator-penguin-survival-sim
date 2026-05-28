@@ -19,12 +19,13 @@ export const PENGUIN_STATE = {
 let penguinIdCounter = 0;
 
 export class Penguin {
-  constructor(x, y) {
+  constructor(x, y, config = {}) {
     this.id = ++penguinIdCounter;
     this.x = x;
     this.y = y;
-    this.bodyTemp = DEFAULT_BODY_TEMP;
-    this.energy = DEFAULT_ENERGY;
+    this.config = config;
+    this.bodyTemp = config.bodyTemp || DEFAULT_BODY_TEMP;
+    this.energy = config.energy || DEFAULT_ENERGY;
     this.state = PENGUIN_STATE.NORMAL;
     this.isBorder = false;
     this.neighborCount = 0;
@@ -32,8 +33,11 @@ export class Penguin {
     // Solo ~60% de los pingüinos tienen huevo
     this.hasEgg = Math.random() < 0.6;
     this.egg = this.hasEgg ? new Egg(this.id) : null;
+    if (this.egg) {
+      this.egg.maxExposureTime = config.eggSearchTimeLimit || 180;
+    }
     
-    this.fatReserve = DEFAULT_ENERGY;
+    this.fatReserve = this.energy;
 
     // Tracking
     this.timeBorder = 0;
@@ -54,13 +58,15 @@ export class Penguin {
     if (!this.isAlive) return 0;
 
     const windChill = windSpeed * 0.01;
+    const baseBorderLoss = this.config.heatLossBorderBase ?? HEAT_LOSS_BORDER_BASE;
+    const baseInteriorLoss = this.config.heatLossInterior ?? HEAT_LOSS_INTERIOR;
     
     if (this.isBorder) {
       // Border penguins lose more heat, wind effect is significant
-      return HEAT_LOSS_BORDER_BASE + windChill * 0.005 + (this.bodyTemp - extTemp) * 0.0001;
+      return baseBorderLoss + windChill * 0.005 + (this.bodyTemp - extTemp) * 0.0001;
     } else {
       // Interior penguins are protected
-      return HEAT_LOSS_INTERIOR + (this.bodyTemp - extTemp) * 0.00001;
+      return baseInteriorLoss + (this.bodyTemp - extTemp) * 0.00001;
     }
   }
 
@@ -71,10 +77,11 @@ export class Penguin {
     if (!this.isAlive || neighbors.length === 0) return;
     
     let heatGain = 0;
+    const transferRate = this.config.heatTransferRate ?? HEAT_TRANSFER_RATE;
     for (const neighbor of neighbors) {
       if (neighbor.isAlive) {
         const diff = neighbor.bodyTemp - this.bodyTemp;
-        heatGain += diff * HEAT_TRANSFER_RATE * 0.1;
+        heatGain += diff * transferRate * 0.1;
       }
     }
     this.bodyTemp += heatGain / Math.max(1, neighbors.length);
@@ -83,12 +90,16 @@ export class Penguin {
   /**
    * Update energy consumption
    */
-  updateEnergy(phaseMultiplier = 1.0) {
+  updateEnergy(phaseMultiplier = 1.0, extraThermogenesisCost = 0) {
     if (!this.isAlive) return;
 
-    const baseDecay = this.isBorder ? ENERGY_DECAY_BORDER : ENERGY_DECAY_BASE;
-    const thermoStress = Math.max(0, (DEFAULT_BODY_TEMP - this.bodyTemp) * 0.0001);
-    const totalDecay = (baseDecay + thermoStress) * phaseMultiplier;
+    const decayBorder = this.config.energyDecayBorder ?? ENERGY_DECAY_BORDER;
+    const decayBase = this.config.energyDecayBase ?? ENERGY_DECAY_BASE;
+    const baseDecay = this.isBorder ? decayBorder : decayBase;
+    
+    const defaultBodyTemp = this.config.bodyTemp ?? DEFAULT_BODY_TEMP;
+    const thermoStress = Math.max(0, (defaultBodyTemp - this.bodyTemp) * 0.0001);
+    const totalDecay = (baseDecay + thermoStress) * phaseMultiplier + extraThermogenesisCost;
     
     this.energy -= totalDecay;
     this.fatReserve -= totalDecay * 0.8;
@@ -181,3 +192,4 @@ export class Penguin {
 export function resetPenguinIdCounter() {
   penguinIdCounter = 0;
 }
+

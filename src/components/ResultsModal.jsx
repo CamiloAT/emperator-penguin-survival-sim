@@ -85,9 +85,13 @@ export default function ResultsModal({ isOpen, onClose, simState, onReset }) {
 
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className="btn btn--ghost btn--full" onClick={onClose}>
-            Ver Simulación
+            Ver Modal / Mapa
           </button>
-          <button className="btn btn--primary btn--full" onClick={onReset}>
+          <button className="btn btn--primary btn--full" onClick={() => {
+            if(window.confirm('¿Iniciar nueva simulación? Se aplicarán variaciones.')) {
+              onReset();
+            }
+          }}>
             <RotateCcw size={14} /> Nueva Simulación
           </button>
         </div>

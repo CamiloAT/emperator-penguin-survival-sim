@@ -193,10 +193,10 @@ export default function SimulationCanvas({ simState }) {
 
     // Dynamically size canvas to its container for crisp rendering
     const rect = wrapper.getBoundingClientRect();
-    const width = Math.floor(rect.width);
-    const height = Math.floor(rect.height);
+    const width = Math.max(10, Math.floor(rect.width));
+    const height = Math.max(10, Math.floor(rect.height));
 
-    if (width > 0 && height > 0 && (canvas.width !== width || canvas.height !== height)) {
+    if (canvas.width !== width || canvas.height !== height) {
       canvas.width = width;
       canvas.height = height;
     }
@@ -204,6 +204,7 @@ export default function SimulationCanvas({ simState }) {
     const offsetX = (width - simSize) / 2;
     const offsetY = (height - simSize) / 2;
 
+    const scale = Math.min(width / simSize, height / simSize, 1);
     const sprites = spriteCacheRef.current;
 
     // === Background covers entire canvas container ===
@@ -211,7 +212,9 @@ export default function SimulationCanvas({ simState }) {
     ctx.fillRect(0, 0, width, height);
 
     ctx.save();
-    ctx.translate(offsetX, offsetY);
+    ctx.translate(width / 2, height / 2);
+    ctx.scale(scale, scale);
+    ctx.translate(-simSize / 2, -simSize / 2);
 
     // Subtle grid (draw fewer lines for performance)
     ctx.strokeStyle = 'rgba(76, 201, 240, 0.025)';

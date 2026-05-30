@@ -220,6 +220,7 @@ export default function App() {
     if (animRef.current) cancelAnimationFrame(animRef.current);
     const state = engineRef.current.forceFinish();
     setSimState(state);
+    setShowResultsModal(true); // Automatically show modal if it's not already
   }, []);
 
   const handleSpeedChange = useCallback((newSpeed) => {
@@ -298,14 +299,30 @@ export default function App() {
 
                 <ActivePanel
                   simState={simState}
-                  running={runningRef.current && simState?.running !== false}
+                  running={runningRef.current && simState?.running !== false && !simState?.finished}
                   speed={speed}
                   onPause={handlePause}
                   onStart={handleStart}
                   onForceEnd={handleForceEnd}
                   onSpeedChange={handleSpeedChange}
-                  onShowAdvancedStats={() => setShowAdvancedStats(true)}
+                  onShowAdvancedStats={() => setShowAdvancedStats(!showAdvancedStats)}
                 />
+                
+                {/* Fallback button if they dismiss modal when finished */}
+                {simState?.finished && (
+                  <div style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 50, display: 'flex', gap: '1rem', background: 'var(--surface)', padding: '0.8rem 1.5rem', borderRadius: '24px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', border: '1px solid var(--border)' }}>
+                     <button className="btn btn--ghost" onClick={() => setShowResultsModal(true)}>
+                       Ver Resultados
+                     </button>
+                     <button className="btn btn--primary" onClick={() => {
+                        if(window.confirm('¿Iniciar nueva simulación?')) {
+                          handleReset();
+                        }
+                     }}>
+                       Nueva Simulación
+                     </button>
+                  </div>
+                )}
               </>
             )
           } />

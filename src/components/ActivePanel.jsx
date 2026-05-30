@@ -26,7 +26,7 @@ export default function ActivePanel({
           <input
             type="range"
             min="1"
-            max="1200"
+            max="500"
             step="10"
             value={speed}
             onChange={e => onSpeedChange(+e.target.value)}

@@ -145,18 +145,100 @@ body::before {
 
 .main-content {
   display: grid;
-  grid-template-columns: 280px 1fr 320px;
   gap: 1rem;
   flex: 1;
+  transition: all 0.3s ease;
+}
+
+.main-content--initial {
+  grid-template-columns: 300px 1fr;
+}
+
+.main-content--running {
+  grid-template-columns: 1fr 340px;
+}
+
+.main-content--loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 @media (max-width: 1200px) {
-  .main-content {
+  .main-content--initial, .main-content--running {
     grid-template-columns: 1fr;
   }
 }
 
+/* ===== LOADING SCREEN ANIMATIONS ===== */
+.penguin-loader {
+  position: relative;
+  width: 200px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.penguin-anim {
+  animation: slidePenguin 2.5s ease-in-out infinite;
+}
+
+@keyframes slidePenguin {
+  0% { transform: translateX(-50px) translateY(0) rotate(-15deg); }
+  50% { transform: translateX(50px) translateY(-5px) rotate(5deg); }
+  100% { transform: translateX(-50px) translateY(0) rotate(-15deg); }
+}
+
+.snow-trail {
+  position: absolute;
+  bottom: 20px;
+  width: 140px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.snow-trail::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; height: 100%; width: 40px;
+  background: rgba(255,255,255,0.7);
+  box-shadow: 0 0 8px rgba(255,255,255,0.8);
+  animation: snowTrail 2.5s ease-in-out infinite;
+}
+@keyframes snowTrail {
+  0% { transform: translateX(20px); opacity: 0; }
+  25% { opacity: 1; }
+  50% { transform: translateX(100px); opacity: 0; }
+  100% { transform: translateX(20px); opacity: 0; }
+}
+
+.snow-splash {
+  animation: splashFade 2.5s ease-in-out infinite;
+}
+@keyframes splashFade {
+  0% { opacity: 0; transform: translateX(10px); }
+  40% { opacity: 1; transform: translateX(-10px) translateY(-5px); }
+  70% { opacity: 0; transform: translateX(-20px) translateY(-10px); }
+  100% { opacity: 0; }
+}
+
 /* ===== CARD ===== */
+.canvas-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-normal);
+  flex: 1;
+}
+
 .card {
   display: flex;
   flex-direction: column;

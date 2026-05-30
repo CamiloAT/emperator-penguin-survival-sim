@@ -303,8 +303,8 @@ export default function SimulationCanvas({ simState }) {
 
   return (
     <div className="canvas-container">
-      <div className="canvas-wrapper">
-        <canvas ref={canvasRef} style={{ width: '100%', height: '100%', maxHeight: '560px' }} />
+      <div className="canvas-wrapper" style={{ height: '100%', minHeight: '600px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <canvas ref={canvasRef} style={{ width: '100%', height: '100%', maxHeight: '80vh', objectFit: 'contain' }} />
 
         <div className="canvas-overlay">
           {env && (

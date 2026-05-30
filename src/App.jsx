@@ -1,10 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import SimulationCanvas from './components/SimulationCanvas.jsx';
 import ControlPanel from './components/ControlPanel.jsx';
-import Dashboard from './components/Dashboard.jsx';
-import Charts from './components/Charts.jsx';
+import ActivePanel from './components/ActivePanel.jsx';
 import ResultsModal from './components/ResultsModal.jsx';
 import SettingsModal from './components/SettingsModal.jsx';
+import LoadingScreen from './components/LoadingScreen.jsx';
+import AdvancedStatsModal from './components/AdvancedStatsModal.jsx';
 import { SimulationEngine } from './simulation/Engine.js';
 
 // Premium Penguin Logo component
@@ -94,6 +95,9 @@ export default function App() {
   const [speed, setSpeed] = useState(60);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showResultsModal, setShowResultsModal] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
+  const [showAdvancedStats, setShowAdvancedStats] = useState(false);
   const engineRef = useRef(null);
   const animRef = useRef(null);
   const runningRef = useRef(false);
@@ -138,6 +142,22 @@ export default function App() {
   }, [speed]);
 
   const handleStart = useCallback(() => {
+    if (!hasStarted) {
+      setIsStarting(true);
+      setTimeout(() => {
+        setIsStarting(false);
+        setHasStarted(true);
+        if (!engineRef.current || engineRef.current.finished) {
+          initEngine();
+        }
+        const engine = engineRef.current;
+        engine.running = true;
+        runningRef.current = true;
+        animRef.current = requestAnimationFrame(loop);
+      }, 2000);
+      return;
+    }
+
     if (!engineRef.current || engineRef.current.finished) {
       initEngine();
     }
@@ -145,7 +165,7 @@ export default function App() {
     engine.running = true;
     runningRef.current = true;
     animRef.current = requestAnimationFrame(loop);
-  }, [loop, initEngine]);
+  }, [loop, initEngine, hasStarted]);
 
   const handlePause = useCallback(() => {
     runningRef.current = false;
@@ -158,6 +178,8 @@ export default function App() {
     runningRef.current = false;
     if (animRef.current) cancelAnimationFrame(animRef.current);
     setShowResultsModal(false);
+    setShowAdvancedStats(false);
+    setHasStarted(false);
     initEngine();
   }, [initEngine]);
 
@@ -165,6 +187,8 @@ export default function App() {
     runningRef.current = false;
     if (animRef.current) cancelAnimationFrame(animRef.current);
     setShowResultsModal(false);
+    setShowAdvancedStats(false);
+    setHasStarted(false);
     setConfig(DEFAULT_CONFIG);
     initEngine(DEFAULT_CONFIG);
   }, []);
@@ -225,32 +249,43 @@ export default function App() {
       </header>
 
       {/* Main Content */}
-      <div className="main-content">
-        {/* Left: Controls */}
-        <ControlPanel
-          config={config}
-          setConfig={setConfig}
-          running={runningRef.current && simState?.running !== false}
-          onStart={handleStart}
-          onPause={handlePause}
-          onReset={handleReset}
-          onResetDefaults={handleResetDefaults}
-          onForceEnd={handleForceEnd}
-          onSpeedChange={handleSpeedChange}
-          speed={speed}
-          finished={simState?.finished}
-          onOpenSettings={() => setShowSettingsModal(true)}
-          onShowResults={() => setShowResultsModal(true)}
-        />
+      <div className={`main-content ${isStarting ? 'main-content--loading' : (hasStarted ? 'main-content--running' : 'main-content--initial')}`}>
+        
+        {isStarting && <LoadingScreen />}
 
-        {/* Center: Simulation Canvas + Charts */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <SimulationCanvas simState={simState} />
-          <Charts stats={simState?.stats} />
-        </div>
+        {!hasStarted && !isStarting && (
+          <>
+            <ControlPanel
+              config={config}
+              setConfig={setConfig}
+              onStart={handleStart}
+              onResetDefaults={handleResetDefaults}
+              onOpenSettings={() => setShowSettingsModal(true)}
+            />
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <SimulationCanvas simState={simState} />
+            </div>
+          </>
+        )}
 
-        {/* Right: Dashboard */}
-        <Dashboard simState={simState} />
+        {hasStarted && !isStarting && (
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <SimulationCanvas simState={simState} />
+            </div>
+            
+            <ActivePanel 
+              simState={simState}
+              running={runningRef.current && simState?.running !== false}
+              speed={speed}
+              onPause={handlePause}
+              onStart={handleStart}
+              onForceEnd={handleForceEnd}
+              onSpeedChange={handleSpeedChange}
+              onShowAdvancedStats={() => setShowAdvancedStats(true)}
+            />
+          </>
+        )}
       </div>
 
       {/* Results Modal */}
@@ -259,6 +294,12 @@ export default function App() {
         onClose={() => setShowResultsModal(false)}
         simState={simState} 
         onReset={handleReset} 
+      />
+
+      <AdvancedStatsModal 
+        isOpen={showAdvancedStats}
+        onClose={() => setShowAdvancedStats(false)}
+        simState={simState}
       />
 
       {/* Settings Modal */}

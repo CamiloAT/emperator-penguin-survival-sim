@@ -203,27 +203,6 @@ export default function Dashboard({ simState }) {
         </div>
       </div>
 
-      {/* Event Log */}
-      <div className="card">
-        <div className="card__header">
-          <AlertTriangle size={16} className="card__header-icon" />
-          <span className="card__title">Registro de Eventos</span>
-        </div>
-        <div className="event-log">
-          {simState.events.length === 0 ? (
-            <div className="no-data" style={{ padding: '1rem' }}>
-              <span>Sin eventos aún</span>
-            </div>
-          ) : (
-            [...simState.events].reverse().map((evt, i) => (
-              <div key={i} className={`event-item event-item--${evt.type}`}>
-                <span className="event-item__day">D{evt.day}</span>
-                <span className="event-item__msg">{evt.message}</span>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
     </div>
   );
 }

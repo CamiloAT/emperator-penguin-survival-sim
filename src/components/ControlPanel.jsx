@@ -76,24 +76,6 @@ export default function ControlPanel({ config, setConfig, running, onStart, onPa
           disabled={running} />
       </div>
 
-      {/* Speed control */}
-      <div className="control-group" style={{ marginTop: '0.5rem', marginBottom: '0.75rem' }}>
-        <label>
-          <FastForward size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-          Velocidad de Simulación ({speed} pasos/tick)
-        </label>
-        <div className="speed-control" style={{ marginTop: '0.35rem' }}>
-          <input
-            type="range"
-            min="1"
-            max="1200"
-            step="10"
-            value={speed}
-            onChange={e => onSpeedChange(+e.target.value)}
-          />
-        </div>
-      </div>
-
       {/* Action buttons */}
       <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
 
@@ -117,53 +99,9 @@ export default function ControlPanel({ config, setConfig, running, onStart, onPa
           <RefreshCw size={13} /> Restaurar Por Defecto
         </button>
 
-        {/* Start / Pause + Reset row */}
-        <div style={{ display: 'flex', gap: '0.4rem', width: '100%' }}>
-          {!running ? (
-            <button className="btn btn--primary btn--full" onClick={onStart} disabled={finished}>
-              <Play size={14} /> {finished ? 'Finalizado' : 'Iniciar'}
-            </button>
-          ) : (
-            <button className="btn btn--ghost btn--full" onClick={onPause}>
-              <Pause size={14} /> Pausar
-            </button>
-          )}
-          <button className="btn btn--danger btn--sm" onClick={onReset} title="Reiniciar simulación">
-            <RotateCcw size={14} />
-          </button>
-        </div>
-
-        {/* Force end simulation */}
-        {running && (
-          <button
-            type="button"
-            className="btn btn--sm btn--full"
-            onClick={onForceEnd}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center',
-              background: 'rgba(239, 71, 111, 0.15)', color: 'var(--accent-red)',
-              border: '1px solid rgba(239, 71, 111, 0.3)', fontSize: '0.72rem'
-            }}
-          >
-            <Square size={12} /> Terminar Simulación
-          </button>
-        )}
-
-        {/* Show statistics */}
-        {finished && onShowResults && (
-          <button
-            type="button"
-            className="btn btn--sm btn--full"
-            onClick={onShowResults}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center',
-              background: 'rgba(76, 201, 240, 0.15)', color: 'var(--accent-cyan)',
-              border: '1px solid rgba(76, 201, 240, 0.3)', fontSize: '0.72rem'
-            }}
-          >
-            <Award size={12} /> Ver Estadísticas
-          </button>
-        )}
+        <button className="btn btn--primary btn--full" onClick={onStart} style={{ marginTop: '0.5rem' }}>
+          <Play size={14} /> Iniciar Simulación
+        </button>
       </div>
     </div>
   );

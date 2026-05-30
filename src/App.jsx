@@ -7,6 +7,7 @@ import ResultsModal from './components/ResultsModal.jsx';
 import SettingsModal from './components/SettingsModal.jsx';
 import LoadingScreen from './components/LoadingScreen.jsx';
 import AdvancedStatsModal from './components/AdvancedStatsModal.jsx';
+import ConfirmModal from './components/ConfirmModal.jsx';
 import { SimulationEngine } from './simulation/Engine.js';
 
 // Premium Penguin Logo component
@@ -93,12 +94,13 @@ export const DEFAULT_CONFIG = {
 export default function App() {
   const [config, setConfig] = useState(DEFAULT_CONFIG);
   const [simState, setSimState] = useState(null);
-  const [speed, setSpeed] = useState(60);
+  const [speed, setSpeed] = useState(20);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showResultsModal, setShowResultsModal] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [showAdvancedStats, setShowAdvancedStats] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const engineRef = useRef(null);
   const animRef = useRef(null);
   const runningRef = useRef(false);
@@ -121,7 +123,7 @@ export default function App() {
   // Initialize on mount
   useEffect(() => {
     initEngine();
-    if (location.pathname !== '/parameters' && location.pathname !== '/simulation') {
+    if (location.pathname !== '/parameters') {
       navigate('/parameters', { replace: true });
     }
   }, []);
@@ -307,19 +309,15 @@ export default function App() {
                   onSpeedChange={handleSpeedChange}
                   onShowAdvancedStats={() => setShowAdvancedStats(!showAdvancedStats)}
                 />
-                
+
                 {/* Fallback button if they dismiss modal when finished */}
                 {simState?.finished && (
-                  <div style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 50, display: 'flex', gap: '1rem', background: 'var(--surface)', padding: '0.8rem 1.5rem', borderRadius: '24px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', border: '1px solid var(--border)' }}>
+                  <div style={{ position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 50, display: 'flex', gap: '1rem', background: 'var(--surface)', padding: '0.8rem 1.5rem', borderRadius: '24px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', border: '1px solid var(--border)' }}>
                      <button className="btn btn--ghost" onClick={() => setShowResultsModal(true)}>
                        Ver Resultados
                      </button>
-                     <button className="btn btn--primary" onClick={() => {
-                        if(window.confirm('¿Iniciar nueva simulación?')) {
-                          handleReset();
-                        }
-                     }}>
-                       Nueva Simulación
+                     <button className="btn btn--primary" onClick={() => setShowResetConfirm(true)}>
+                       Nueva Simulación (Ajustar Parám.)
                      </button>
                   </div>
                 )}
@@ -330,6 +328,18 @@ export default function App() {
           <Route path="*" element={<Navigate to="/parameters" replace />} />
         </Routes>
       </div>
+
+      <ConfirmModal
+        isOpen={showResetConfirm}
+        onClose={() => setShowResetConfirm(false)}
+        onConfirm={() => {
+          setShowResetConfirm(false);
+          handleReset();
+        }}
+        title="Volver a los Parámetros"
+        message="Regresar al panel principal descartará los resultados actuales y los datos de esta colonia. Podrás crear una nueva configuración de pingüinos o usar la anterior. ¿Deseas continuar?"
+        confirmText="Ajustar y Nueva Simulación"
+      />
 
       {/* Results Modal */}
       <ResultsModal 

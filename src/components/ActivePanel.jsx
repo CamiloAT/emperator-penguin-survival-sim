@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Dashboard from './Dashboard.jsx';
-import { Play, Pause, Square, BarChart2, FastForward } from 'lucide-react';
+import ConfirmModal from './ConfirmModal.jsx';
+import { Play, Pause, Square, BarChart2, FastForward, RotateCcw } from 'lucide-react';
 
-export default function ActivePanel({ 
-  simState, running, speed, onPause, onStart, onForceEnd, onSpeedChange, onShowAdvancedStats 
+export default function ActivePanel({
+  simState, running, speed, onPause, onStart, onForceEnd, onSpeedChange, onShowAdvancedStats
 }) {
+  const [showConfirm, setShowConfirm] = useState(false);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%', maxHeight: 'calc(100vh - 120px)' }}>
       {/* Scrollable Dashboard Stats */}
@@ -26,7 +29,7 @@ export default function ActivePanel({
           <input
             type="range"
             min="1"
-            max="500"
+            max="150"
             step="10"
             value={speed}
             onChange={e => onSpeedChange(+e.target.value)}
@@ -34,7 +37,11 @@ export default function ActivePanel({
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
-          {!running ? (
+          {simState?.finished ? (
+            <button className="btn btn--primary btn--full" onClick={() => setShowConfirm(true)}>
+              <RotateCcw size={14} /> Reiniciar (Mismos parám.)
+            </button>
+          ) : !running ? (
             <button className="btn btn--primary btn--full" onClick={onStart}>
               <Play size={14} /> Reanudar
             </button>
@@ -43,18 +50,21 @@ export default function ActivePanel({
               <Pause size={14} /> Pausar
             </button>
           )}
-          <button 
-            className="btn btn--sm" 
-            onClick={onForceEnd}
-            style={{
-              padding: '0 1rem',
-              background: 'rgba(239, 71, 111, 0.15)', color: 'var(--accent-red)',
-              border: '1px solid rgba(239, 71, 111, 0.3)'
-            }}
-            title="Terminar Simulación"
-          >
-            <Square size={14} />
-          </button>
+
+          {!simState?.finished && (
+            <button
+              className="btn btn--sm"
+              onClick={onForceEnd}
+              style={{
+                padding: '0 1rem',
+                background: 'rgba(239, 71, 111, 0.15)', color: 'var(--accent-red)',
+                border: '1px solid rgba(239, 71, 111, 0.3)'
+              }}
+              title="Terminar Simulación"
+            >
+              <Square size={14} />
+            </button>
+          )}
         </div>
 
         <button 
@@ -65,6 +75,15 @@ export default function ActivePanel({
           <BarChart2 size={14} /> Estadísticas Avanzadas
         </button>
       </div>
+
+      <ConfirmModal
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={onStart}
+        title="Reiniciar Simulación"
+        message="¿Volver a intentar sobrevivir el invierno con los mismos parámetros? Recuerda que el clima y los eventos aleatorios provocarán que cada colonia y sus tasas de mortalidad sean diferentes, así que el resultado no será idéntico."
+        confirmText="Reiniciar"
+      />
     </div>
   );
 }

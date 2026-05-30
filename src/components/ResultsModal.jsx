@@ -1,6 +1,10 @@
+import React, { useState } from 'react';
 import { Award, Heart, Egg, Shield, RotateCcw } from 'lucide-react';
+import ConfirmModal from './ConfirmModal.jsx';
 
 export default function ResultsModal({ isOpen, onClose, simState, onReset }) {
+  const [showConfirm, setShowConfirm] = useState(false);
+
   if (!isOpen || !simState?.finished) return null;
 
   const { colony, eggs } = simState;
@@ -87,15 +91,20 @@ export default function ResultsModal({ isOpen, onClose, simState, onReset }) {
           <button className="btn btn--ghost btn--full" onClick={onClose}>
             Ver Modal / Mapa
           </button>
-          <button className="btn btn--primary btn--full" onClick={() => {
-            if(window.confirm('¿Iniciar nueva simulación? Se aplicarán variaciones.')) {
-              onReset();
-            }
-          }}>
+          <button className="btn btn--primary btn--full" onClick={() => setShowConfirm(true)}>
             <RotateCcw size={14} /> Nueva Simulación
           </button>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={onReset}
+        title="Volver a los Parámetros"
+        message="Regresar al panel principal descartará los resultados actuales y los datos de esta colonia. Podrás crear una nueva configuración de pingüinos o usar la anterior. ¿Deseas continuar?"
+        confirmText="Ajustar e Iniciar"
+      />
     </div>
   );
 }

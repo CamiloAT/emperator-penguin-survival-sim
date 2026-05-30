@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import SimulationCanvas from './components/SimulationCanvas.jsx';
 import ControlPanel from './components/ControlPanel.jsx';
 import ActivePanel from './components/ActivePanel.jsx';
@@ -101,6 +102,8 @@ export default function App() {
   const engineRef = useRef(null);
   const animRef = useRef(null);
   const runningRef = useRef(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const initEngine = useCallback((cfg = config) => {
     runningRef.current = false;
@@ -118,7 +121,23 @@ export default function App() {
   // Initialize on mount
   useEffect(() => {
     initEngine();
+    if (location.pathname !== '/parameters' && location.pathname !== '/simulation') {
+      navigate('/parameters', { replace: true });
+    }
   }, []);
+
+  // Sync hash changes (back button)
+  useEffect(() => {
+    if (location.pathname === '/parameters' && hasStarted) {
+      // Stop simulation if going back to parameters
+      runningRef.current = false;
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+      setShowResultsModal(false);
+      setShowAdvancedStats(false);
+      setHasStarted(false);
+      initEngine();
+    }
+  }, [location.pathname, hasStarted, initEngine]);
 
   // Show results modal when finished
   useEffect(() => {
@@ -130,7 +149,6 @@ export default function App() {
   const loop = useCallback(() => {
     if (!runningRef.current || !engineRef.current) return;
     const engine = engineRef.current;
-    engine.stepsPerTick = speed;
     const state = engine.tick();
     setSimState(state);
 
@@ -139,10 +157,11 @@ export default function App() {
       return;
     }
     animRef.current = requestAnimationFrame(loop);
-  }, [speed]);
+  }, []);
 
   const handleStart = useCallback(() => {
     if (!hasStarted) {
+      navigate('/simulation');
       setIsStarting(true);
       setTimeout(() => {
         setIsStarting(false);
@@ -180,8 +199,9 @@ export default function App() {
     setShowResultsModal(false);
     setShowAdvancedStats(false);
     setHasStarted(false);
+    navigate('/parameters');
     initEngine();
-  }, [initEngine]);
+  }, [initEngine, navigate]);
 
   const handleResetDefaults = useCallback(() => {
     runningRef.current = false;
@@ -189,9 +209,10 @@ export default function App() {
     setShowResultsModal(false);
     setShowAdvancedStats(false);
     setHasStarted(false);
+    navigate('/parameters');
     setConfig(DEFAULT_CONFIG);
     initEngine(DEFAULT_CONFIG);
-  }, []);
+  }, [navigate]);
 
   const handleForceEnd = useCallback(() => {
     if (!engineRef.current) return;
@@ -250,42 +271,47 @@ export default function App() {
 
       {/* Main Content */}
       <div className={`main-content ${isStarting ? 'main-content--loading' : (hasStarted ? 'main-content--running' : 'main-content--initial')}`}>
-        
-        {isStarting && <LoadingScreen />}
+        <Routes>
+          <Route path="/parameters" element={
+            isStarting ? <LoadingScreen /> : (
+              <>
+                <ControlPanel
+                  config={config}
+                  setConfig={setConfig}
+                  onStart={handleStart}
+                  onResetDefaults={handleResetDefaults}
+                  onOpenSettings={() => setShowSettingsModal(true)}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: 'calc(100vh - 120px)' }}>
+                  <SimulationCanvas simState={simState} />
+                </div>
+              </>
+            )
+          } />
+          
+          <Route path="/simulation" element={
+            isStarting ? <LoadingScreen /> : (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: 'calc(100vh - 120px)' }}>
+                  <SimulationCanvas simState={simState} />
+                </div>
 
-        {!hasStarted && !isStarting && (
-          <>
-            <ControlPanel
-              config={config}
-              setConfig={setConfig}
-              onStart={handleStart}
-              onResetDefaults={handleResetDefaults}
-              onOpenSettings={() => setShowSettingsModal(true)}
-            />
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <SimulationCanvas simState={simState} />
-            </div>
-          </>
-        )}
+                <ActivePanel
+                  simState={simState}
+                  running={runningRef.current && simState?.running !== false}
+                  speed={speed}
+                  onPause={handlePause}
+                  onStart={handleStart}
+                  onForceEnd={handleForceEnd}
+                  onSpeedChange={handleSpeedChange}
+                  onShowAdvancedStats={() => setShowAdvancedStats(true)}
+                />
+              </>
+            )
+          } />
 
-        {hasStarted && !isStarting && (
-          <>
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <SimulationCanvas simState={simState} />
-            </div>
-            
-            <ActivePanel 
-              simState={simState}
-              running={runningRef.current && simState?.running !== false}
-              speed={speed}
-              onPause={handlePause}
-              onStart={handleStart}
-              onForceEnd={handleForceEnd}
-              onSpeedChange={handleSpeedChange}
-              onShowAdvancedStats={() => setShowAdvancedStats(true)}
-            />
-          </>
-        )}
+          <Route path="*" element={<Navigate to="/parameters" replace />} />
+        </Routes>
       </div>
 
       {/* Results Modal */}

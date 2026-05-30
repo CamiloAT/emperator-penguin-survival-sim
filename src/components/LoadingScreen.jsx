@@ -4,7 +4,7 @@ export default function LoadingScreen() {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      height: '100%', width: '100%', minHeight: '600px',
+      flex: 1, width: '100%', minHeight: '60vh',
       background: 'var(--bg-glass)', borderRadius: 'var(--radius-xl)',
       border: '1px solid var(--border-subtle)',
       backdropFilter: 'blur(16px)',

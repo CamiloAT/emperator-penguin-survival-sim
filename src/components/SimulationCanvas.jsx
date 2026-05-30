@@ -186,20 +186,32 @@ export default function SimulationCanvas({ simState }) {
   const draw = useCallback(() => {
     if (!simState || !canvasRef.current || !spriteCacheRef.current) return;
     const canvas = canvasRef.current;
+    const wrapper = canvas.parentElement;
     const ctx = canvas.getContext('2d', { alpha: false });
     const gs = simState.gridSize;
-    const size = gs * CELL;
+    const simSize = gs * CELL;
 
-    if (canvas.width !== size || canvas.height !== size) {
-      canvas.width = size;
-      canvas.height = size;
+    // Dynamically size canvas to its container for crisp rendering
+    const rect = wrapper.getBoundingClientRect();
+    const width = Math.floor(rect.width);
+    const height = Math.floor(rect.height);
+
+    if (width > 0 && height > 0 && (canvas.width !== width || canvas.height !== height)) {
+      canvas.width = width;
+      canvas.height = height;
     }
+
+    const offsetX = (width - simSize) / 2;
+    const offsetY = (height - simSize) / 2;
 
     const sprites = spriteCacheRef.current;
 
-    // === Background ===
+    // === Background covers entire canvas container ===
     ctx.fillStyle = '#0b1220';
-    ctx.fillRect(0, 0, size, size);
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.save();
+    ctx.translate(offsetX, offsetY);
 
     // Subtle grid (draw fewer lines for performance)
     ctx.strokeStyle = 'rgba(76, 201, 240, 0.025)';
@@ -208,27 +220,27 @@ export default function SimulationCanvas({ simState }) {
     for (let i = 0; i <= gs; i += gridStep) {
       ctx.beginPath();
       ctx.moveTo(i * CELL, 0);
-      ctx.lineTo(i * CELL, size);
+      ctx.lineTo(i * CELL, simSize);
       ctx.stroke();
       ctx.beginPath();
       ctx.moveTo(0, i * CELL);
-      ctx.lineTo(size, i * CELL);
+      ctx.lineTo(simSize, i * CELL);
       ctx.stroke();
     }
 
     // === Wind gradient ===
     if (simState.environment) {
       const angle = simState.environment.windAngle;
-      const cx = size / 2, cy = size / 2;
+      const cx = simSize / 2, cy = simSize / 2;
       const windGrad = ctx.createRadialGradient(
-        cx + Math.cos(angle) * size * 0.3,
-        cy + Math.sin(angle) * size * 0.3,
-        0, cx, cy, size * 0.5
+        cx + Math.cos(angle) * simSize * 0.3,
+        cy + Math.sin(angle) * simSize * 0.3,
+        0, cx, cy, simSize * 0.5
       );
       windGrad.addColorStop(0, 'rgba(76, 201, 240, 0.04)');
       windGrad.addColorStop(1, 'transparent');
       ctx.fillStyle = windGrad;
-      ctx.fillRect(0, 0, size, size);
+      ctx.fillRect(0, 0, simSize, simSize);
     }
 
     // === Draw dropped eggs ===
@@ -287,12 +299,14 @@ export default function SimulationCanvas({ simState }) {
     const time = Date.now() * 0.001;
     ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
     for (let i = 0; i < 20; i++) {
-      const sx = ((Math.sin(time + i * 73) * 0.5 + 0.5) * size + time * 10 * (i % 3 + 1)) % size;
-      const sy = ((Math.cos(time * 0.7 + i * 37) * 0.5 + 0.5) * size + time * 15 * (i % 2 + 1)) % size;
+      const sx = ((Math.sin(time + i * 73) * 0.5 + 0.5) * simSize + time * 10 * (i % 3 + 1)) % simSize;
+      const sy = ((Math.cos(time * 0.7 + i * 37) * 0.5 + 0.5) * simSize + time * 15 * (i % 2 + 1)) % simSize;
       ctx.beginPath();
       ctx.arc(sx, sy, 0.8, 0, Math.PI * 2);
       ctx.fill();
     }
+
+    ctx.restore();
   }, [simState]);
 
   useEffect(() => {
@@ -303,8 +317,8 @@ export default function SimulationCanvas({ simState }) {
 
   return (
     <div className="canvas-container">
-      <div className="canvas-wrapper" style={{ height: '100%', minHeight: '600px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <canvas ref={canvasRef} style={{ width: '100%', height: '100%', maxHeight: '80vh', objectFit: 'contain' }} />
+      <div className="canvas-wrapper" style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+        <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
 
         <div className="canvas-overlay">
           {env && (

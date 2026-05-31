@@ -483,11 +483,11 @@ body::before {
   align-items: center;
   justify-content: center;
   flex: 1; /* Eliminamos el aspect-ratio fijo y lo dejamos crecer en alto */
-  box-shadow: var(--shadow-lg), inset 0 0 60px rgba(255, 153, 0, 0.03);
+  box-shadow: var(--shadow-lg), inset 0 0 40px rgba(180, 210, 240, 0.05);
 }
 
 .canvas-wrapper canvas {
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 .canvas-overlay {

@@ -19,7 +19,7 @@ import SnowParticles from './SnowParticles.jsx';
 import DroppedEggs3D from './DroppedEggs3D.jsx';
 import AntarcticLighting from './AntarcticLighting.jsx';
 
-function SceneContent({ simState }) {
+function SceneContent({ simState, config }) {
   const gridSize = simState?.gridSize || 40;
   const env = simState?.environment;
   const windAngle = env?.windAngle || 0;
@@ -77,6 +77,7 @@ function SceneContent({ simState }) {
         <PenguinInstances
           simState={simState}
           gridSize={gridSize}
+          config={config}
         />
       )}
 
@@ -85,6 +86,7 @@ function SceneContent({ simState }) {
         <DroppedEggs3D
           droppedEggs={simState.droppedEggs}
           gridSize={gridSize}
+          config={config}
         />
       )}
 
@@ -113,10 +115,10 @@ function LoadingFallback() {
 /**
  * Main exported component — the Canvas + Scene
  */
-export default function SimulationScene3D({ simState }) {
+export default function SimulationScene3D({ simState, config }) {
   const cameraConfig = useMemo(() => ({
-    position: [12, 14, 18],
-    fov: 50,
+    position: [12, 7, 18],
+    fov: 30,
     near: 0.1,
     far: 200,
   }), []);
@@ -140,7 +142,7 @@ export default function SimulationScene3D({ simState }) {
       }}
     >
       <Suspense fallback={<LoadingFallback />}>
-        <SceneContent simState={simState} />
+        <SceneContent simState={simState} config={config} />
       </Suspense>
     </Canvas>
   );

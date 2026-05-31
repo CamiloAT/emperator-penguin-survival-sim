@@ -3,7 +3,7 @@
  * Renders dropped/exposed eggs in the 3D scene as glowing spheroids.
  * Uses simple mesh instances (not InstancedMesh since count is usually low).
  */
-import { useRef } from 'react';
+import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { EGG_STATE } from '../../simulation/Egg.js';
@@ -11,26 +11,30 @@ import { EGG_STATE } from '../../simulation/Egg.js';
 const eggGeometry = new THREE.SphereGeometry(0.15, 12, 8);
 eggGeometry.scale(0.8, 1.2, 0.8);
 
-const eggMaterial = new THREE.MeshStandardMaterial({
-  color: '#ff8800',
-  emissive: '#cc5500',
-  emissiveIntensity: 0.6,
-  roughness: 0.3,
-  metalness: 0.1,
-});
-
-const glowMaterial = new THREE.MeshBasicMaterial({
-  color: '#ffaa00',
-  transparent: true,
-  opacity: 0.15,
-  side: THREE.DoubleSide,
-});
-
 const glowGeometry = new THREE.SphereGeometry(0.35, 8, 6);
 
-export default function DroppedEggs3D({ droppedEggs = [], gridSize = 40 }) {
+export default function DroppedEggs3D({ droppedEggs = [], gridSize = 40, config }) {
   const groupRef = useRef();
   const halfGrid = gridSize / 2;
+
+  const eggMaterial = React.useMemo(() => {
+    return new THREE.MeshStandardMaterial({
+      color: config?.eggColor || '#ff8800',
+      emissive: config?.eggColor || '#ff8800',
+      emissiveIntensity: 0.6,
+      roughness: 0.3,
+      metalness: 0.1,
+    });
+  }, [config?.eggColor]);
+
+  const glowMaterial = React.useMemo(() => {
+    return new THREE.MeshBasicMaterial({
+      color: config?.eggColor || '#ffaa00',
+      transparent: true,
+      opacity: 0.15,
+      side: THREE.DoubleSide,
+    });
+  }, [config?.eggColor]);
 
   useFrame(({ clock }) => {
     if (!groupRef.current) return;
@@ -76,7 +80,7 @@ export default function DroppedEggs3D({ droppedEggs = [], gridSize = 40 }) {
             />
             {/* Ground point light for dramatic effect */}
             <pointLight
-              color="#ffaa00"
+              color={config?.eggColor || "#ffaa00"}
               intensity={0.3}
               distance={2}
               position={[0, 0.3, 0]}

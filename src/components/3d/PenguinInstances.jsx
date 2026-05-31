@@ -42,7 +42,12 @@ function getTempColor(penguin) {
   return _color.clone();
 }
 
-export default function PenguinInstances({ simState, gridSize }) {
+export default function PenguinInstances({ simState, gridSize, config }) {
+  useEffect(() => {
+    if (config?.searchColor) {
+      COLORS.searching.set(config.searchColor);
+    }
+  }, [config?.searchColor]);
   const meshRef = useRef();
   const geometry = usePenguinGeometry();
 
@@ -58,24 +63,65 @@ export default function PenguinInstances({ simState, gridSize }) {
   }, []);
   const eggMaterial = useMemo(() => {
     return new THREE.MeshStandardMaterial({
-      color: '#ff8800',
-      emissive: '#ff4400',
+      color: config?.eggColor || '#ff8800',
+      emissive: config?.eggColor || '#ff8800',
       emissiveIntensity: 0.8,
       roughness: 0.3,
       metalness: 0.1,
     });
-  }, []);
+  }, [config?.eggColor]);
 
   const material = useMemo(() => {
-    return new THREE.MeshStandardMaterial({
+    const mat = new THREE.MeshStandardMaterial({
       roughness: 0.7,
       metalness: 0.05,
       vertexColors: true,
     });
+    
+    mat.onBeforeCompile = (shader) => {
+      shader.uniforms.uTime = { value: 0 };
+      
+      shader.vertexShader = `
+        uniform float uTime;
+        attribute float isEye;
+        ${shader.vertexShader}
+      `;
+      
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <begin_vertex>',
+        `
+        #include <begin_vertex>
+        
+        if (isEye > 0.5) {
+          // Each penguin blinks rarely
+          float t = uTime * 0.4 + float(gl_InstanceID) * 7.13;
+          
+          float blinkPattern = fract(t);
+          float doubleBlink = fract(t * 3.0);
+          
+          // Blink happens only ~1% of the time, very occasionally
+          bool isBlinking = blinkPattern < 0.01 || (mod(float(gl_InstanceID), 3.0) < 0.1 && doubleBlink < 0.01 && blinkPattern < 0.15);
+          
+          float blinkScale = isBlinking ? 0.02 : 1.0;
+          
+          // The eye's local Y center is roughly 0.7
+          transformed.y = 0.7 + (transformed.y - 0.7) * blinkScale;
+        }
+        `
+      );
+      
+      mat.userData.shader = shader;
+    };
+    
+    return mat;
   }, []);
 
   // Update instance matrices and colors every frame
-  useFrame(() => {
+  useFrame(({ clock }) => {
+    if (material.userData.shader) {
+      material.userData.shader.uniforms.uTime.value = clock.getElapsedTime();
+    }
+    
     if (!meshRef.current || !eggMeshRef.current || !simState?.penguins) return;
 
     const mesh = meshRef.current;

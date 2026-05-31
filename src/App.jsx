@@ -8,6 +8,7 @@ import SettingsModal from './components/SettingsModal.jsx';
 import LoadingScreen from './components/LoadingScreen.jsx';
 import AdvancedStatsModal from './components/AdvancedStatsModal.jsx';
 import ConfirmModal from './components/ConfirmModal.jsx';
+import ColorSettingsModal from './components/ColorSettingsModal.jsx';
 import { SimulationEngine } from './simulation/Engine.js';
 
 // Premium Penguin Logo component
@@ -45,6 +46,11 @@ export const DEFAULT_CONFIG = {
   bodyTemp: 38,
   energy: 100,
   eggLossProb: 0.005,
+  
+  // Customization
+  initialViewMode: '3d',
+  eggColor: '#ff8800',
+  searchColor: '#ff0000',
   criticalTemp: 34,
   searchRadius: 2,
 
@@ -101,6 +107,8 @@ export default function App() {
   const [isStarting, setIsStarting] = useState(false);
   const [showAdvancedStats, setShowAdvancedStats] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showColorModal, setShowColorModal] = useState(false);
+  const [viewMode, setViewMode] = useState('3d');
   const engineRef = useRef(null);
   const animRef = useRef(null);
   const runningRef = useRef(false);
@@ -291,9 +299,10 @@ export default function App() {
                   onStart={handleStart}
                   onResetDefaults={handleResetDefaults}
                   onOpenSettings={() => setShowSettingsModal(true)}
+                  onOpenColors={() => setShowColorModal(true)}
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: 'calc(100vh - 120px)' }}>
-                  <SimulationView simState={simState} />
+                  <SimulationView simState={simState} config={config} viewMode={viewMode} setViewMode={setViewMode} />
                 </div>
               </>
             )
@@ -303,7 +312,7 @@ export default function App() {
             isStarting ? <LoadingScreen /> : (
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: 'calc(100vh - 120px)' }}>
-                  <SimulationView simState={simState} />
+                  <SimulationView simState={simState} config={config} viewMode={viewMode} setViewMode={setViewMode} />
                 </div>
 
                 <ActivePanel
@@ -369,6 +378,13 @@ export default function App() {
         config={config}
         onSave={handleSaveSettings}
         onForceEnd={handleForceEnd}
+      />
+
+      <ColorSettingsModal
+        isOpen={showColorModal}
+        onClose={() => setShowColorModal(false)}
+        config={config}
+        setConfig={setConfig}
       />
     </div>
   );

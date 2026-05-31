@@ -10,7 +10,7 @@ const HALF = CELL / 2;
  * Draw a detailed emperor penguin sprite at the given cell size.
  * Designed for ~32px so features are clearly visible.
  */
-function drawPenguinSprite(ctx, state, size) {
+function drawPenguinSprite(ctx, state, size, config) {
   const cx = size / 2;
   const cy = size / 2;
   const s = size / 32; // scale factor relative to 32px base
@@ -158,8 +158,8 @@ function drawPenguinSprite(ctx, state, size) {
     ctx.ellipse(cx, cy + 6 * s, 3 * s, 4 * s, 0, 0, Math.PI * 2);
     const eggGrad = ctx.createRadialGradient(cx - 1 * s, cy + 5 * s, 0, cx, cy + 6 * s, 4 * s);
     eggGrad.addColorStop(0, '#ffffff');
-    eggGrad.addColorStop(0.5, '#00f5ff'); // Bright neon cyan
-    eggGrad.addColorStop(1, '#0088aa');
+    eggGrad.addColorStop(0.5, config?.eggColor || '#ff8800'); 
+    eggGrad.addColorStop(1, '#000000');
     ctx.fillStyle = eggGrad;
     ctx.fill();
     ctx.strokeStyle = '#ffffff';
@@ -169,7 +169,7 @@ function drawPenguinSprite(ctx, state, size) {
 
   // === Searching ring ===
   if (isSearching) {
-    ctx.strokeStyle = '#ff0055';
+    ctx.strokeStyle = config?.searchColor || '#ff0000';
     ctx.lineWidth = 1.5 * s;
     ctx.beginPath();
     ctx.arc(cx, cy, 15 * s, 0, Math.PI * 2);
@@ -179,7 +179,7 @@ function drawPenguinSprite(ctx, state, size) {
   ctx.restore();
 }
 
-function drawDroppedEggSprite(ctx, size) {
+function drawDroppedEggSprite(ctx, size, config) {
   const cx = size / 2;
   const cy = size / 2;
   const s = size / 32;
@@ -204,8 +204,8 @@ function drawDroppedEggSprite(ctx, size) {
   ctx.ellipse(cx, cy, 4 * s, 5.5 * s, 0, 0, Math.PI * 2);
   const eggGrad = ctx.createRadialGradient(cx - 1 * s, cy - 2 * s, 0, cx, cy, 6 * s);
   eggGrad.addColorStop(0, '#ffffff');
-  eggGrad.addColorStop(0.4, '#ff0055');
-  eggGrad.addColorStop(1, '#aa0033');
+  eggGrad.addColorStop(0.4, config?.eggColor || '#ff8800');
+  eggGrad.addColorStop(1, '#000000');
   ctx.fillStyle = eggGrad;
   ctx.fill();
 
@@ -224,7 +224,7 @@ function drawDroppedEggSprite(ctx, size) {
 /**
  * Pre-render penguin sprites to offscreen canvases for performance.
  */
-function createSpriteCache() {
+function createSpriteCache(config) {
   const cache = {};
   const states = ['interior', 'border', 'cold', 'searching', 'withEgg_interior', 'withEgg_border', 'withEgg_cold'];
 
@@ -233,7 +233,7 @@ function createSpriteCache() {
     oc.width = CELL;
     oc.height = CELL;
     const ctx = oc.getContext('2d');
-    drawPenguinSprite(ctx, state, CELL);
+    drawPenguinSprite(ctx, state, CELL, config);
     cache[state] = oc;
   }
 
@@ -242,7 +242,7 @@ function createSpriteCache() {
   eggCanvas.width = CELL;
   eggCanvas.height = CELL;
   const eggCtx = eggCanvas.getContext('2d');
-  drawDroppedEggSprite(eggCtx, CELL);
+  drawDroppedEggSprite(eggCtx, CELL, config);
   cache['droppedEgg'] = eggCanvas;
 
   // Dead penguin (empty)
@@ -294,14 +294,14 @@ function getColonyBounds(penguins, droppedEggs) {
   };
 }
 
-export default function SimulationCanvas({ simState }) {
+export default function SimulationCanvas({ simState, config }) {
   const canvasRef = useRef(null);
   const spriteCacheRef = useRef(null);
 
-  // Create sprite cache once
+  // Create sprite cache once or when colors change
   useEffect(() => {
-    spriteCacheRef.current = createSpriteCache();
-  }, []);
+    spriteCacheRef.current = createSpriteCache(config);
+  }, [config?.eggColor, config?.searchColor]);
 
   const draw = useCallback(() => {
     if (!simState || !canvasRef.current || !spriteCacheRef.current) return;
@@ -516,7 +516,14 @@ export default function SimulationCanvas({ simState }) {
       // Searching animation
       if (p.state === PENGUIN_STATE.SEARCHING_EGG) {
         const pulse = 0.4 + 0.6 * Math.sin(Date.now() * 0.008);
-        ctx.strokeStyle = `rgba(255, 0, 85, ${pulse})`;
+        
+        // Convert hex to rgba for stroke
+        const hex = config?.searchColor || '#ff0000';
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        
+        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${pulse})`;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.arc(px + HALF, py + HALF, CELL * 0.55, 0, Math.PI * 2);
@@ -618,15 +625,15 @@ export default function SimulationCanvas({ simState }) {
         <div style={{ width: '100%', height: '1px', background: 'var(--border-subtle)', margin: '4px 0' }} />
 
         <div className="legend__item">
-          <div className="legend__dot" style={{ background: '#00f5ff', boxShadow: '0 0 4px #00f5ff', borderRadius: '50%' }} />
+          <div className="legend__dot" style={{ background: config?.eggColor || '#ff8800', boxShadow: `0 0 4px ${config?.eggColor || '#ff8800'}`, borderRadius: '50%' }} />
           Huevo protegido
         </div>
         <div className="legend__item">
-          <div className="legend__dot" style={{ background: '#ff0055', boxShadow: '0 0 6px #ff0055', borderRadius: '50%' }} />
+          <div className="legend__dot" style={{ background: config?.eggColor || '#ff8800', boxShadow: `0 0 6px ${config?.eggColor || '#ff8800'}`, borderRadius: '50%' }} />
           Huevo expuesto
         </div>
         <div className="legend__item">
-          <div className="legend__dot" style={{ background: 'rgba(255,0,85,0.4)', borderRadius: '50%', border: '1px solid #ff0055' }} />
+          <div className="legend__dot" style={{ background: 'transparent', borderRadius: '50%', border: `1.5px solid ${config?.searchColor || '#ff0000'}`, boxShadow: `inset 0 0 4px ${config?.searchColor || '#ff0000'}` }} />
           Buscando huevo
         </div>
       </div>

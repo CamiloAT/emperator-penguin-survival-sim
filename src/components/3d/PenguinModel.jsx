@@ -23,15 +23,18 @@ const CHEST_YELLOW = new THREE.Color('#ffd250');       // Yellow upper chest gra
 /**
  * Assigns a flat color to all vertices of a geometry.
  */
-function assignVertexColor(geo, color) {
+function assignVertexColor(geo, color, isEye = false) {
   const count = geo.attributes.position.count;
   const colors = new Float32Array(count * 3);
+  const isEyeArray = new Float32Array(count);
   for (let i = 0; i < count; i++) {
     colors[i * 3] = color.r;
     colors[i * 3 + 1] = color.g;
     colors[i * 3 + 2] = color.b;
+    isEyeArray[i] = isEye ? 1.0 : 0.0;
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geo.setAttribute('isEye', new THREE.BufferAttribute(isEyeArray, 1));
 }
 
 /**
@@ -92,28 +95,28 @@ export function createPenguinGeometry() {
   const eyeL = new THREE.SphereGeometry(0.04, 6, 4);
   mat4.makeTranslation(-0.1, 0.7, 0.16);
   eyeL.applyMatrix4(mat4);
-  assignVertexColor(eyeL, EYE_WHITE);
+  assignVertexColor(eyeL, EYE_WHITE, true);
   parts.push(eyeL);
 
   // === Right eye (white) ===
   const eyeR = new THREE.SphereGeometry(0.04, 6, 4);
   mat4.makeTranslation(0.1, 0.7, 0.16);
   eyeR.applyMatrix4(mat4);
-  assignVertexColor(eyeR, EYE_WHITE);
+  assignVertexColor(eyeR, EYE_WHITE, true);
   parts.push(eyeR);
 
   // === Left pupil (black) ===
   const pupilL = new THREE.SphereGeometry(0.022, 5, 4);
   mat4.makeTranslation(-0.1, 0.7, 0.2);
   pupilL.applyMatrix4(mat4);
-  assignVertexColor(pupilL, EYE_PUPIL);
+  assignVertexColor(pupilL, EYE_PUPIL, true);
   parts.push(pupilL);
 
   // === Right pupil (black) ===
   const pupilR = new THREE.SphereGeometry(0.022, 5, 4);
   mat4.makeTranslation(0.1, 0.7, 0.2);
   pupilR.applyMatrix4(mat4);
-  assignVertexColor(pupilR, EYE_PUPIL);
+  assignVertexColor(pupilR, EYE_PUPIL, true);
   parts.push(pupilR);
 
   // === Beak (orange) ===
@@ -181,6 +184,7 @@ function mergeColoredGeometries(geos) {
   const positions = new Float32Array(totalVerts * 3);
   const normals = new Float32Array(totalVerts * 3);
   const colors = new Float32Array(totalVerts * 3);
+  const isEye = new Float32Array(totalVerts);
   const indices = [];
 
   let vertOffset = 0;
@@ -207,6 +211,9 @@ function mergeColoredGeometries(geos) {
         colors[vi + 1] = col.getY(i);
         colors[vi + 2] = col.getZ(i);
       }
+      if (g.attributes.isEye) {
+        isEye[vertOffset + i] = g.attributes.isEye.getX(i);
+      }
     }
 
     if (idx) {
@@ -226,6 +233,7 @@ function mergeColoredGeometries(geos) {
   merged.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   merged.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
   merged.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  merged.setAttribute('isEye', new THREE.BufferAttribute(isEye, 1));
   
   if (totalVerts > 65535) {
     merged.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));

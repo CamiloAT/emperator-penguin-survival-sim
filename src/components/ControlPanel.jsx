@@ -1,6 +1,6 @@
-import { Settings, Users, Thermometer, Zap, Egg, Play, Pause, RotateCcw, FastForward, Square, RefreshCw, Award } from 'lucide-react';
+import { Settings, Users, Thermometer, Zap, Egg, Play, Pause, RotateCcw, FastForward, Square, RefreshCw, Award, Palette, Monitor } from 'lucide-react';
 
-export default function ControlPanel({ config, setConfig, running, onStart, onPause, onReset, onSpeedChange, speed, finished, onOpenSettings, onResetDefaults, onForceEnd, onShowResults }) {
+export default function ControlPanel({ config, setConfig, running, onStart, onPause, onReset, onSpeedChange, speed, finished, onOpenSettings, onOpenColors, onResetDefaults, onForceEnd, onShowResults }) {
   const handleChange = (key, value) => {
     setConfig(prev => ({ ...prev, [key]: value }));
   };
@@ -76,6 +76,8 @@ export default function ControlPanel({ config, setConfig, running, onStart, onPa
           disabled={running} />
       </div>
 
+
+
       {/* Action buttons */}
       <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
 
@@ -87,6 +89,15 @@ export default function ControlPanel({ config, setConfig, running, onStart, onPa
           style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center' }}
         >
           <Settings size={14} /> Parámetros Avanzados
+        </button>
+
+        <button
+          type="button"
+          className="btn btn--ghost btn--full"
+          onClick={onOpenColors}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center' }}
+        >
+          <Palette size={14} /> Personalizar Colores
         </button>
 
         {/* Reset to defaults */}

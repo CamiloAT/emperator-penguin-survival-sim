@@ -3,15 +3,24 @@
  * Wrapper that lets the user toggle between the 2D canvas and the 3D scene.
  * Both views receive the same simState from the Engine.
  */
-import { useState, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense, useEffect } from 'react';
 import SimulationCanvas from './SimulationCanvas.jsx';
 import { Box, Layers } from 'lucide-react';
 
 // Lazy-load the 3D scene to avoid loading Three.js if user stays in 2D
 const SimulationScene3D = lazy(() => import('./3d/SimulationScene3D.jsx'));
 
-export default function SimulationView({ simState }) {
-  const [viewMode, setViewMode] = useState('2d'); // '2d' | '3d'
+export default function SimulationView({ simState, config, viewMode, setViewMode }) {
+  const [isSwitching, setIsSwitching] = useState(false);
+
+  const handleToggle = (mode) => {
+    if (mode === viewMode || isSwitching) return;
+    setIsSwitching(true);
+    setViewMode(mode);
+    setTimeout(() => {
+      setIsSwitching(false);
+    }, 2000);
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
@@ -19,16 +28,18 @@ export default function SimulationView({ simState }) {
       <div className="view-toggle">
         <button
           className={`view-toggle__btn ${viewMode === '2d' ? 'view-toggle__btn--active' : ''}`}
-          onClick={() => setViewMode('2d')}
+          onClick={() => handleToggle('2d')}
           title="Vista 2D"
+          disabled={isSwitching}
         >
           <Layers size={14} />
           <span>2D</span>
         </button>
         <button
           className={`view-toggle__btn ${viewMode === '3d' ? 'view-toggle__btn--active' : ''}`}
-          onClick={() => setViewMode('3d')}
+          onClick={() => handleToggle('3d')}
           title="Vista 3D"
+          disabled={isSwitching}
         >
           <Box size={14} />
           <span>3D</span>
@@ -38,16 +49,16 @@ export default function SimulationView({ simState }) {
       {/* Render both but show/hide to preserve state */}
       <div style={{
         flex: 1,
-        display: viewMode === '2d' ? 'flex' : 'none',
+        display: viewMode === '2d' && !isSwitching ? 'flex' : 'none',
         flexDirection: 'column',
         height: '100%'
       }}>
-        <SimulationCanvas simState={simState} />
+        <SimulationCanvas simState={simState} config={config} />
       </div>
 
       <div style={{
         flex: 1,
-        display: viewMode === '3d' ? 'flex' : 'none',
+        display: viewMode === '3d' && !isSwitching ? 'flex' : 'none',
         flexDirection: 'column',
         height: '100%',
         minHeight: 0
@@ -70,7 +81,7 @@ export default function SimulationView({ simState }) {
                 <span>Cargando escena 3D...</span>
               </div>
             }>
-              <SimulationScene3D simState={simState} />
+              <SimulationScene3D simState={simState} config={config} />
             </Suspense>
 
             {/* HUD overlay (same info badges as 2D) */}
@@ -111,6 +122,33 @@ export default function SimulationView({ simState }) {
           </div>
         </div>
       </div>
+
+      {isSwitching && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'var(--bg-glass)',
+          backdropFilter: 'blur(16px)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10,
+          borderRadius: 'var(--radius-lg)'
+        }}>
+          <div className="penguin-anim" style={{ 
+            width: '60px', height: '80px', 
+            background: `radial-gradient(ellipse at 30% 30%, #fff 10%, ${config?.eggColor || '#ff8800'} 80%)`,
+            borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
+            boxShadow: `0 0 20px ${config?.eggColor || '#ff8800'}`,
+            marginBottom: '1rem',
+            animation: 'spinEgg 1.5s linear infinite'
+          }} />
+          <span style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '0.8rem' }}>
+            Transicionando a vista {viewMode.toUpperCase()}...
+          </span>
+        </div>
+      )}
     </div>
   );
 }

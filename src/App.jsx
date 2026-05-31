@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import SimulationCanvas from './components/SimulationCanvas.jsx';
+import SimulationView from './components/SimulationView.jsx';
 import ControlPanel from './components/ControlPanel.jsx';
 import ActivePanel from './components/ActivePanel.jsx';
 import ResultsModal from './components/ResultsModal.jsx';
@@ -293,7 +293,7 @@ export default function App() {
                   onOpenSettings={() => setShowSettingsModal(true)}
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: 'calc(100vh - 120px)' }}>
-                  <SimulationCanvas simState={simState} />
+                  <SimulationView simState={simState} />
                 </div>
               </>
             )
@@ -303,7 +303,7 @@ export default function App() {
             isStarting ? <LoadingScreen /> : (
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: 'calc(100vh - 120px)' }}>
-                  <SimulationCanvas simState={simState} />
+                  <SimulationView simState={simState} />
                 </div>
 
                 <ActivePanel

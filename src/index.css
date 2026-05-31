@@ -758,3 +758,62 @@ body::before {
   font-size: 0.8rem;
   gap: 0.5rem;
 }
+
+/* ===== 2D / 3D VIEW TOGGLE ===== */
+.view-toggle {
+  position: absolute;
+  bottom: 0.75rem;
+  right: 0.75rem;
+  z-index: 20;
+  display: flex;
+  gap: 2px;
+  background: rgba(10, 10, 14, 0.85);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  padding: 3px;
+  box-shadow: var(--shadow-sm);
+}
+
+.view-toggle__btn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.7rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  letter-spacing: 0.04em;
+}
+
+.view-toggle__btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.view-toggle__btn--active {
+  background: var(--gradient-primary);
+  color: white;
+  box-shadow: 0 2px 8px rgba(255, 119, 0, 0.3);
+}
+
+.view-toggle__btn--active:hover {
+  background: var(--gradient-primary);
+  color: white;
+}
+
+/* ===== 3D CANVAS ADJUSTMENTS ===== */
+.canvas-container canvas[data-engine="three.js"] {
+  border-radius: inherit;
+}
+
+/* Make the 3D wrapper fill the available space properly */
+.canvas-wrapper > div[style] {
+  border-radius: inherit;
+}

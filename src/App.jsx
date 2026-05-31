@@ -141,6 +141,13 @@ export default function App() {
     }
   }, [location.pathname, hasStarted, initEngine]);
 
+  // Live preview of parameters before starting
+  useEffect(() => {
+    if (!hasStarted && location.pathname === '/parameters') {
+      initEngine(config);
+    }
+  }, [config, hasStarted, location.pathname]); // Removed initEngine from deps to avoid infinite loops if config changes
+
   // Show results modal when finished
   useEffect(() => {
     if (simState?.finished) {

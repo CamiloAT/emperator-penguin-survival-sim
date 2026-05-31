@@ -109,6 +109,7 @@ export default function App() {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showColorModal, setShowColorModal] = useState(false);
   const [viewMode, setViewMode] = useState('3d');
+  const [isNightMode, setIsNightMode] = useState(false);
   const engineRef = useRef(null);
   const animRef = useRef(null);
   const runningRef = useRef(false);
@@ -302,7 +303,7 @@ export default function App() {
                   onOpenColors={() => setShowColorModal(true)}
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: 'calc(100vh - 120px)' }}>
-                  <SimulationView simState={simState} config={config} viewMode={viewMode} setViewMode={setViewMode} />
+                  <SimulationView simState={simState} config={config} viewMode={viewMode} setViewMode={setViewMode} isNightMode={isNightMode} setIsNightMode={setIsNightMode} />
                 </div>
               </>
             )
@@ -312,7 +313,7 @@ export default function App() {
             isStarting ? <LoadingScreen /> : (
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: 'calc(100vh - 120px)' }}>
-                  <SimulationView simState={simState} config={config} viewMode={viewMode} setViewMode={setViewMode} />
+                  <SimulationView simState={simState} config={config} viewMode={viewMode} setViewMode={setViewMode} isNightMode={isNightMode} setIsNightMode={setIsNightMode} />
                 </div>
 
                 <ActivePanel

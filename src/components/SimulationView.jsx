@@ -5,12 +5,12 @@
  */
 import { useState, lazy, Suspense, useEffect } from 'react';
 import SimulationCanvas from './SimulationCanvas.jsx';
-import { Box, Layers } from 'lucide-react';
+import { Box, Layers, Sun, Moon } from 'lucide-react';
 
 // Lazy-load the 3D scene to avoid loading Three.js if user stays in 2D
 const SimulationScene3D = lazy(() => import('./3d/SimulationScene3D.jsx'));
 
-export default function SimulationView({ simState, config, viewMode, setViewMode }) {
+export default function SimulationView({ simState, config, viewMode, setViewMode, isNightMode, setIsNightMode }) {
   const [isSwitching, setIsSwitching] = useState(false);
 
   const handleToggle = (mode) => {
@@ -44,6 +44,21 @@ export default function SimulationView({ simState, config, viewMode, setViewMode
           <Box size={14} />
           <span>3D</span>
         </button>
+
+        {/* Day/Night Toggle only visible when in 3D */}
+        {viewMode === '3d' && (
+          <>
+            <div style={{ width: '1px', background: 'var(--border-subtle)', margin: '0 4px' }} />
+            <button
+              className="view-toggle__btn"
+              onClick={() => setIsNightMode(!isNightMode)}
+              title={isNightMode ? "Cambiar a Día" : "Cambiar a Noche"}
+              disabled={isSwitching}
+            >
+              {isNightMode ? <Sun size={14} /> : <Moon size={14} />}
+            </button>
+          </>
+        )}
       </div>
 
       {/* Render both but show/hide to preserve state */}
@@ -81,7 +96,7 @@ export default function SimulationView({ simState, config, viewMode, setViewMode
                 <span>Cargando escena 3D...</span>
               </div>
             }>
-              <SimulationScene3D simState={simState} config={config} />
+              <SimulationScene3D simState={simState} config={config} isNightMode={isNightMode} />
             </Suspense>
 
             {/* HUD overlay (same info badges as 2D) */}

@@ -8,8 +8,8 @@
  * - Lighting + environment
  * - Camera controls
  */
-import { Suspense, useMemo } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Suspense, useMemo, useEffect } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 
@@ -19,7 +19,21 @@ import SnowParticles from './SnowParticles.jsx';
 import DroppedEggs3D from './DroppedEggs3D.jsx';
 import AntarcticLighting from './AntarcticLighting.jsx';
 
-function SceneContent({ simState, config }) {
+
+// Animated sky background function
+function Skydome({ isNightMode }) {
+  const { scene } = useThree();
+  
+  useEffect(() => {
+    // Transition background color based on day/night
+    const targetColor = isNightMode ? new THREE.Color("#050814") : new THREE.Color("#8ab4e0");
+    scene.background = targetColor;
+  }, [isNightMode, scene]);
+  
+  return null;
+}
+
+function SceneContent({ simState, config, isNightMode }) {
   const gridSize = simState?.gridSize || 40;
   const env = simState?.environment;
   const windAngle = env?.windAngle || 0;
@@ -42,7 +56,10 @@ function SceneContent({ simState, config }) {
       />
 
       {/* Lighting system */}
-      <AntarcticLighting temperature={temperature} windSpeed={windSpeed} />
+      <AntarcticLighting temperature={temperature} windSpeed={windSpeed} isNightMode={isNightMode} />
+
+      {/* Skydome color transitions */}
+      <Skydome isNightMode={isNightMode} />
 
       {/* Stars (visible in Antarctic darkness) */}
       <Stars
@@ -53,7 +70,38 @@ function SceneContent({ simState, config }) {
         saturation={0.1}
         fade
         speed={0.5}
+        visible={isNightMode}
       />
+
+      {/* Lunar or Solar body */}
+      <group position={isNightMode ? [-30, 4, -40] : [-40, 6, 40]}>
+        {isNightMode ? (
+          /* Crescent Moon */
+          <mesh rotation={[0, 0, Math.PI / 4]}>
+            {/* Base moon sphere (dark, slightly visible) */}
+            <mesh>
+              <sphereGeometry args={[2.5, 32, 32]} />
+              <meshBasicMaterial color="#0a1525" />
+            </mesh>
+            {/* The bright crescent part constructed via a torus/tube trick or just using a second overlapped sphere for a boolean-like cut. Here we do an overlapped dark sphere to "cut" the light one */}
+            <mesh>
+              <sphereGeometry args={[2.51, 32, 32]} />
+              <meshBasicMaterial color="#e0e8ff" transparent opacity={0.9} />
+            </mesh>
+            <mesh position={[0.6, 0.4, 0]}>
+              <sphereGeometry args={[2.55, 32, 32]} />
+              {/* This sphere matches the background color to create the crescent illusion */}
+              <meshBasicMaterial color="#050814" />
+            </mesh>
+          </mesh>
+        ) : (
+          /* Sun */
+          <mesh>
+            <sphereGeometry args={[3, 32, 32]} />
+            <meshBasicMaterial color="#ffcc33" />
+          </mesh>
+        )}
+      </group>
 
       {/* Antarctic terrain */}
       <AntarcticTerrain
@@ -115,7 +163,7 @@ function LoadingFallback() {
 /**
  * Main exported component — the Canvas + Scene
  */
-export default function SimulationScene3D({ simState, config }) {
+export default function SimulationScene3D({ simState, config, isNightMode }) {
   const cameraConfig = useMemo(() => ({
     position: [12, 7, 18],
     fov: 30,
@@ -139,10 +187,12 @@ export default function SimulationScene3D({ simState, config }) {
         height: '100%',
         display: 'block',
         borderRadius: 'inherit',
+        background: isNightMode ? '#050814' : '#8ab4e0',
+        transition: 'background 2s ease-in-out'
       }}
     >
       <Suspense fallback={<LoadingFallback />}>
-        <SceneContent simState={simState} config={config} />
+        <SceneContent simState={simState} config={config} isNightMode={isNightMode} />
       </Suspense>
     </Canvas>
   );

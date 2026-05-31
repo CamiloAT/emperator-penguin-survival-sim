@@ -142,6 +142,8 @@ export class SimulationEngine {
     this.updateBorderStatus();
     this.env.update(0);
 
+    this.addEvent('simulation_start', 'La colonia ha llegado al sitio de anidación. Comienza el duro invierno antártico.');
+
     return this.getState();
   }
 
@@ -178,7 +180,11 @@ export class SimulationEngine {
       }
 
       // 1. Update environment
+      const prevPhaseIndex = this.env.currentPhaseIndex;
       this.env.update(this.step);
+      if (prevPhaseIndex !== undefined && prevPhaseIndex !== this.env.currentPhaseIndex) {
+        this.addEvent('phase_change', `Cambio de clima: La colonia ha entrado en la fase '${this.env.currentPhase.name}'.`);
+      }
 
       // 2. Update border status (every 10 steps for perf)
       if (this.step % 10 === 0) {
@@ -256,9 +262,7 @@ export class SimulationEngine {
           if (p.egg && p.egg.state === EGG_STATE.EXPOSED) {
             this.droppedEggs.push(p.egg);
           }
-          if (this.step % MINUTES_PER_DAY < this.stepsPerTick) {
-            this.addEvent('penguin_death', `Pingüino #${p.id} ha muerto por hipotermia (${p.bodyTemp.toFixed(1)}°C). Día ${this.env.totalDay}.`);
-          }
+          this.addEvent('penguin_death', `Pingüino #${p.id} ha muerto por hipotermia (${p.bodyTemp.toFixed(1)}°C). Día ${this.env.totalDay}.`);
           continue;
         }
 
@@ -272,9 +276,7 @@ export class SimulationEngine {
           if (p.egg && p.egg.state === EGG_STATE.EXPOSED) {
             this.droppedEggs.push(p.egg);
           }
-          if (this.step % MINUTES_PER_DAY < this.stepsPerTick) {
-            this.addEvent('penguin_death', `Pingüino #${p.id} ha muerto por inanición (energía agotada). Día ${this.env.totalDay}.`);
-          }
+          this.addEvent('penguin_death', `Pingüino #${p.id} ha muerto por inanición (energía agotada). Día ${this.env.totalDay}.`);
           continue;
         }
 
@@ -303,13 +305,23 @@ export class SimulationEngine {
           const prob = p.isBorder ? cfg.eggLossProbBorder : cfg.eggLossProb;
           if (Math.random() < prob) {
             p.hasEgg = false;
-            p.egg.drop(p.x, p.y, this.env.temperature, this.env.windSpeed);
+            
+            // Huevo se desliza por el viento 2 a 4 celdas
+            const windDir = [Math.cos(this.env.windAngle), Math.sin(this.env.windAngle)];
+            const rollDist = 2 + Math.floor(Math.random() * 3);
+            let ex = Math.round(p.x + windDir[0] * rollDist);
+            let ey = Math.round(p.y + windDir[1] * rollDist);
+            ex = Math.max(1, Math.min(this.gridSize - 2, ex));
+            ey = Math.max(1, Math.min(this.gridSize - 2, ey));
+
+            p.egg.drop(ex, ey, this.env.temperature, this.env.windSpeed);
             p.state = PENGUIN_STATE.SEARCHING_EGG;
-            p.searchTarget = { x: p.x, y: p.y };
+            p.searchTarget = { x: ex, y: ey };
+            p.timeSearching = 0;
             this.droppedEggs.push(p.egg);
             this.stats.totalEggsDropped++;
             this.stats.eggsLost++;
-            this.addEvent('egg_lost', `¡Pingüino #${p.id} perdió su huevo! Temp: ${this.env.temperature.toFixed(1)}°C`);
+            this.addEvent('egg_lost', `¡Pingüino #${p.id} perdió su huevo! Se deslizó por el hielo.`);
           }
         }
 
@@ -470,8 +482,8 @@ export class SimulationEngine {
       message,
       timestamp: Date.now()
     });
-    if (this.events.length > 100) {
-      this.events = this.events.slice(-100);
+    if (this.events.length > 500) {
+      this.events = this.events.slice(-500);
     }
   }
 
@@ -532,7 +544,7 @@ export class SimulationEngine {
       penguins: this.penguins,
       droppedEggs: this.droppedEggs,
       gridSize: this.gridSize,
-      events: this.events.slice(-20),
+      events: [...this.events],
       stats: this.stats
     };
   }

@@ -28,26 +28,29 @@ export default function AdvancedStatsModal({ isOpen, onClose, simState }) {
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem', display: 'grid', gridTemplateColumns: '1fr 320px', gap: '1.5rem', alignItems: 'start' }}>
           
-          <Charts stats={simState.stats} />
+          {/* Left Column: Charts */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <Charts stats={simState.stats} />
+          </div>
 
-          {/* Event Log */}
-          <div className="card">
-            <div className="card__header">
+          {/* Right Column: Event Log */}
+          <div className="card" style={{ height: '100%', maxHeight: 'calc(90vh - 100px)', display: 'flex', flexDirection: 'column' }}>
+            <div className="card__header" style={{ marginBottom: '0.75rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-subtle)' }}>
               <AlertTriangle size={16} className="card__header-icon" />
-              <span className="card__title">Registro de Eventos (Historial Completo)</span>
+              <span className="card__title">Registro de Eventos</span>
             </div>
-            <div className="event-log" style={{ maxHeight: '300px' }}>
-              {simState.events.length === 0 ? (
-                <div className="no-data" style={{ padding: '1rem' }}>
+            <div className="event-log" style={{ flex: 1, overflowY: 'auto', maxHeight: 'none', paddingRight: '4px' }}>
+              {!simState.events || simState.events.length === 0 ? (
+                <div className="no-data" style={{ padding: '1rem', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span>Sin eventos aún</span>
                 </div>
               ) : (
                 [...simState.events].reverse().map((evt, i) => (
-                  <div key={i} className={`event-item event-item--${evt.type}`}>
-                    <span className="event-item__day">D{evt.day}</span>
-                    <span className="event-item__msg">{evt.message}</span>
+                  <div key={i} className={`event-item event-item--${evt.type}`} style={{ marginBottom: '0.5rem' }}>
+                    <span className="event-item__day" style={{ minWidth: '35px', fontWeight: 'bold' }}>D{evt.day}</span>
+                    <span className="event-item__msg" style={{ lineHeight: '1.3' }}>{evt.message}</span>
                   </div>
                 ))
               )}

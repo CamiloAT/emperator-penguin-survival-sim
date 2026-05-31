@@ -152,6 +152,9 @@ export class Penguin {
       return false;
     }
 
+    // Pingüino debe buscar por al menos 15 minutos (pasos) para que sea visible la animación
+    if (this.timeSearching < 15) return false;
+
     // Check if egg is at current position or adjacent
     const dx = Math.abs(this.x - this.egg.x);
     const dy = Math.abs(this.y - this.egg.y);
@@ -160,6 +163,7 @@ export class Penguin {
       this.hasEgg = true;
       this.state = PENGUIN_STATE.NORMAL;
       this.searchTarget = null;
+      this.timeSearching = 0;
       return true;
     }
     return false;

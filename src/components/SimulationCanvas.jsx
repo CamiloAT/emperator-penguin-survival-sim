@@ -151,25 +151,25 @@ function drawPenguinSprite(ctx, state, size) {
     // Egg glow
     ctx.beginPath();
     ctx.ellipse(cx, cy + 6 * s, 5 * s, 5 * s, 0, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255, 220, 120, 0.15)';
+    ctx.fillStyle = 'rgba(0, 245, 255, 0.4)';
     ctx.fill();
     // Egg shape
     ctx.beginPath();
     ctx.ellipse(cx, cy + 6 * s, 3 * s, 4 * s, 0, 0, Math.PI * 2);
     const eggGrad = ctx.createRadialGradient(cx - 1 * s, cy + 5 * s, 0, cx, cy + 6 * s, 4 * s);
-    eggGrad.addColorStop(0, '#fff8e0');
-    eggGrad.addColorStop(0.5, '#f8d878');
-    eggGrad.addColorStop(1, '#d4a840');
+    eggGrad.addColorStop(0, '#ffffff');
+    eggGrad.addColorStop(0.5, '#00f5ff'); // Bright neon cyan
+    eggGrad.addColorStop(1, '#0088aa');
     ctx.fillStyle = eggGrad;
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-    ctx.lineWidth = 0.6 * s;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 0.8 * s;
     ctx.stroke();
   }
 
   // === Searching ring ===
   if (isSearching) {
-    ctx.strokeStyle = '#f8961e';
+    ctx.strokeStyle = '#ff0055';
     ctx.lineWidth = 1.5 * s;
     ctx.beginPath();
     ctx.arc(cx, cy, 15 * s, 0, Math.PI * 2);
@@ -186,10 +186,10 @@ function drawDroppedEggSprite(ctx, size) {
 
   // Glow on ice
   ctx.beginPath();
-  ctx.arc(cx, cy, 10 * s, 0, Math.PI * 2);
-  const glowGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 10 * s);
-  glowGrad.addColorStop(0, 'rgba(248, 180, 60, 0.35)');
-  glowGrad.addColorStop(1, 'rgba(248, 180, 60, 0)');
+  ctx.arc(cx, cy, 11 * s, 0, Math.PI * 2);
+  const glowGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 11 * s);
+  glowGrad.addColorStop(0, 'rgba(255, 0, 85, 0.5)'); // vibrant pink/magenta
+  glowGrad.addColorStop(1, 'rgba(255, 0, 85, 0)');
   ctx.fillStyle = glowGrad;
   ctx.fill();
 
@@ -203,9 +203,9 @@ function drawDroppedEggSprite(ctx, size) {
   ctx.beginPath();
   ctx.ellipse(cx, cy, 4 * s, 5.5 * s, 0, 0, Math.PI * 2);
   const eggGrad = ctx.createRadialGradient(cx - 1 * s, cy - 2 * s, 0, cx, cy, 6 * s);
-  eggGrad.addColorStop(0, '#fff8e0');
-  eggGrad.addColorStop(0.4, '#f8d070');
-  eggGrad.addColorStop(1, '#c89830');
+  eggGrad.addColorStop(0, '#ffffff');
+  eggGrad.addColorStop(0.4, '#ff0055');
+  eggGrad.addColorStop(1, '#aa0033');
   ctx.fillStyle = eggGrad;
   ctx.fill();
 
@@ -516,7 +516,7 @@ export default function SimulationCanvas({ simState }) {
       // Searching animation
       if (p.state === PENGUIN_STATE.SEARCHING_EGG) {
         const pulse = 0.4 + 0.6 * Math.sin(Date.now() * 0.008);
-        ctx.strokeStyle = `rgba(248, 150, 30, ${pulse})`;
+        ctx.strokeStyle = `rgba(255, 0, 85, ${pulse})`;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.arc(px + HALF, py + HALF, CELL * 0.55, 0, Math.PI * 2);
@@ -550,6 +550,17 @@ export default function SimulationCanvas({ simState }) {
 
   useEffect(() => {
     draw();
+
+    // Re-draw when the container resizes (fixes navigation/layout render bugs)
+    const wrapper = canvasRef.current?.parentElement;
+    if (!wrapper) return;
+    
+    const resizeObserver = new ResizeObserver(() => {
+      draw();
+    });
+    
+    resizeObserver.observe(wrapper);
+    return () => resizeObserver.disconnect();
   }, [draw]);
 
   const env = simState?.environment;
@@ -607,15 +618,15 @@ export default function SimulationCanvas({ simState }) {
         <div style={{ width: '100%', height: '1px', background: 'var(--border-subtle)', margin: '4px 0' }} />
 
         <div className="legend__item">
-          <div className="legend__dot" style={{ background: '#ffd166', borderRadius: '50%' }} />
+          <div className="legend__dot" style={{ background: '#00f5ff', boxShadow: '0 0 4px #00f5ff', borderRadius: '50%' }} />
           Huevo protegido
         </div>
         <div className="legend__item">
-          <div className="legend__dot" style={{ background: '#f8961e', boxShadow: '0 0 4px #f8961e', borderRadius: '50%' }} />
+          <div className="legend__dot" style={{ background: '#ff0055', boxShadow: '0 0 6px #ff0055', borderRadius: '50%' }} />
           Huevo expuesto
         </div>
         <div className="legend__item">
-          <div className="legend__dot" style={{ background: 'rgba(248,150,30,0.5)', borderRadius: '50%', border: '1px solid #f8961e' }} />
+          <div className="legend__dot" style={{ background: 'rgba(255,0,85,0.4)', borderRadius: '50%', border: '1px solid #ff0055' }} />
           Buscando huevo
         </div>
       </div>

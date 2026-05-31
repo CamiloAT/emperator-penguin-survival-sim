@@ -8,6 +8,7 @@ import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { usePenguinGeometry } from './PenguinModel.jsx';
+import { getTerrainHeight } from './AntarcticTerrain.jsx';
 import { PENGUIN_STATE } from '../../simulation/Penguin.js';
 
 // Temp objects to avoid per-frame allocations
@@ -46,7 +47,23 @@ export default function PenguinInstances({ simState, gridSize }) {
   const geometry = usePenguinGeometry();
 
   const maxCount = useMemo(() => {
-    return simState?.colony?.total || 200;
+    return Math.max(simState?.colony?.total || 200, 1000);
+  }, [simState?.colony?.total]);
+
+  const eggMeshRef = useRef();
+  const eggGeometry = useMemo(() => {
+    const geo = new THREE.SphereGeometry(0.18, 16, 12); // Reduced size to be proportional but visible
+    geo.scale(0.8, 1.2, 0.8);
+    return geo;
+  }, []);
+  const eggMaterial = useMemo(() => {
+    return new THREE.MeshStandardMaterial({
+      color: '#ff8800',
+      emissive: '#ff4400',
+      emissiveIntensity: 0.8,
+      roughness: 0.3,
+      metalness: 0.1,
+    });
   }, []);
 
   const material = useMemo(() => {
@@ -59,7 +76,7 @@ export default function PenguinInstances({ simState, gridSize }) {
 
   // Update instance matrices and colors every frame
   useFrame(() => {
-    if (!meshRef.current || !simState?.penguins) return;
+    if (!meshRef.current || !eggMeshRef.current || !simState?.penguins) return;
 
     const mesh = meshRef.current;
     const penguins = simState.penguins;
@@ -78,12 +95,13 @@ export default function PenguinInstances({ simState, gridSize }) {
         // Convert grid coords (x, y) to world coords (x, z) centered on origin
         const wx = (p.x - halfGrid) * 0.8;
         const wz = (p.y - halfGrid) * 0.8;
+        const wy = getTerrainHeight(wx, wz);
 
-        _dummy.position.set(wx, 0, wz);
+        _dummy.position.set(wx, wy, wz);
         _dummy.scale.set(1, 1, 1);
 
-        // Slight random rotation for variation
-        _dummy.rotation.set(0, (p.id * 1.37) % (Math.PI * 2), 0);
+        const rotY = (p.id * 1.37) % (Math.PI * 2);
+        _dummy.rotation.set(0, rotY, 0);
 
         // Gentle lean for searching penguins
         if (p.state === PENGUIN_STATE.SEARCHING_EGG) {
@@ -99,27 +117,57 @@ export default function PenguinInstances({ simState, gridSize }) {
       // Set instance color
       const col = getTempColor(p);
       mesh.setColorAt(i, col);
+
+      // Update carried egg position
+      if (p.hasEgg && p.state !== PENGUIN_STATE.DEAD && p.state !== PENGUIN_STATE.SEARCHING_EGG) {
+        const rotY = (p.id * 1.37) % (Math.PI * 2);
+        const wx = (p.x - halfGrid) * 0.8;
+        const wz = (p.y - halfGrid) * 0.8;
+        const wy = getTerrainHeight(wx, wz);
+        const eggX = wx + Math.sin(rotY) * 0.22;
+        const eggZ = wz + Math.cos(rotY) * 0.22;
+        _dummy.position.set(eggX, wy + 0.15, eggZ);
+        _dummy.scale.set(1, 1, 1);
+        _dummy.rotation.set(0, 0, 0);
+        _dummy.updateMatrix();
+        eggMeshRef.current.setMatrixAt(i, _dummy.matrix);
+      } else {
+        _dummy.position.set(0, -10, 0);
+        _dummy.scale.set(0.001, 0.001, 0.001);
+        _dummy.updateMatrix();
+        eggMeshRef.current.setMatrixAt(i, _dummy.matrix);
+      }
     }
 
-    // Hide unused instances
     for (let i = penguins.length; i < maxCount; i++) {
       _dummy.position.set(0, -10, 0);
       _dummy.scale.set(0.001, 0.001, 0.001);
       _dummy.updateMatrix();
       mesh.setMatrixAt(i, _dummy.matrix);
+      eggMeshRef.current.setMatrixAt(i, _dummy.matrix);
     }
 
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     mesh.count = penguins.length;
+
+    eggMeshRef.current.instanceMatrix.needsUpdate = true;
+    eggMeshRef.current.count = penguins.length;
   });
 
   return (
-    <instancedMesh
-      ref={meshRef}
-      args={[geometry, material, maxCount]}
-      castShadow
-      receiveShadow
-    />
+    <group>
+      <instancedMesh
+        ref={meshRef}
+        args={[geometry, material, maxCount]}
+        castShadow
+        receiveShadow
+      />
+      <instancedMesh
+        ref={eggMeshRef}
+        args={[eggGeometry, eggMaterial, maxCount]}
+        castShadow
+      />
+    </group>
   );
 }

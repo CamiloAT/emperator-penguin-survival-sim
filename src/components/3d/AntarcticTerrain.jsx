@@ -48,6 +48,12 @@ function fbm(x, y, octaves = 4) {
   return value / maxValue;
 }
 
+export function getTerrainHeight(x, z) {
+  // Make dunes MASSIVE and highly exaggerated
+  const height = fbm(x * 0.015, z * 0.015, 5) * 6.0 + fbm(x * 0.08, z * 0.08, 3) * 1.5;
+  return height - 3.0;
+}
+
 export default function AntarcticTerrain({ gridSize = 40, windAngle = 0, windSpeed = 50 }) {
   const meshRef = useRef();
   const planeSize = gridSize * 0.8 + 10;
@@ -64,20 +70,22 @@ export default function AntarcticTerrain({ gridSize = 40, windAngle = 0, windSpe
       const x = pos.getX(i);
       const z = pos.getZ(i);
 
-      // Multi-octave displacement for rolling snow dunes
-      const height = fbm(x * 0.06, z * 0.06, 4) * 0.6
-                   + fbm(x * 0.15, z * 0.15, 2) * 0.15;
+      const height = getTerrainHeight(x, z);
+      pos.setY(i, height);
 
-      pos.setY(i, height - 0.4);
-
-      // Snow color variation: slightly bluer in valleys, whiter on peaks
-      const brightness = 0.78 + height * 0.15;
-      const r = brightness * 0.92;
-      const g = brightness * 0.95;
-      const b = brightness * 1.02;
-      colors[i * 3] = Math.min(1, r);
-      colors[i * 3 + 1] = Math.min(1, g);
-      colors[i * 3 + 2] = Math.min(1, b);
+      // Soft icy blue in valleys, fading to white snow on peaks
+      // Map height roughly from -3 to +3 into a 0 to 1 factor
+      const hFactor = Math.max(0, Math.min(1, (height + 3) / 6));
+      
+      // Valley (soft light blue): r=0.82, g=0.92, b=0.98
+      // Peak (white snow): r=0.98, g=0.98, b=1.0
+      const r = 0.82 + hFactor * 0.16;
+      const g = 0.92 + hFactor * 0.06;
+      const b = 0.98 + hFactor * 0.02;
+      
+      colors[i * 3] = Math.min(1, Math.max(0, r));
+      colors[i * 3 + 1] = Math.min(1, Math.max(0, g));
+      colors[i * 3 + 2] = Math.min(1, Math.max(0, b));
     }
 
     geo.computeVertexNormals();

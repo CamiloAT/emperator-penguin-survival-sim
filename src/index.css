@@ -823,3 +823,103 @@ body::before {
 .canvas-wrapper > div[style] {
   border-radius: inherit;
 }
+
+/* ===== BENTO COMPONENTS ===== */
+.bento-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 4rem;
+  }
+
+  .bento-span-2 {
+    grid-column: span 1;
+  }
+
+  @media (min-width: 768px) {
+    .bento-span-2 {
+      grid-column: span 2;
+    }
+  }
+
+  .bento-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 4rem;
+  }
+
+  .landing-card {
+    background: rgba(20, 20, 35, 0.4);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    padding: 2.5rem;
+    backdrop-filter: blur(12px);
+    transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease;
+  }
+
+  .landing-card:hover {
+    transform: translateY(-5px);
+    background: rgba(30, 30, 50, 0.5);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .badge-landing {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 99px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .landing-shell {
+    min-height: 100vh;
+    background: radial-gradient(circle at top, rgba(30, 40, 70, 0.3) 0%, var(--background) 70%);
+  }
+
+  .landing-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 3rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .landing-main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 3rem;
+  }
+
+  .scroll-container {
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    padding: 2rem 0;
+    /* gradient masks for smooth fade out at edges */
+    -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+    mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+  }
+
+  .scroll-track {
+    display: flex;
+    gap: 1.5rem;
+    width: max-content;
+    animation: infiniteScroll 40s linear infinite;
+  }
+
+  .scroll-container:hover .scroll-track {
+    animation-play-state: paused;
+  }
+
+  @keyframes infiniteScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); } 
+  }

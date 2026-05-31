@@ -9,10 +9,11 @@ import LoadingScreen from './components/LoadingScreen.jsx';
 import AdvancedStatsModal from './components/AdvancedStatsModal.jsx';
 import ConfirmModal from './components/ConfirmModal.jsx';
 import ColorSettingsModal from './components/ColorSettingsModal.jsx';
+import LandingPage from './components/LandingPage.jsx';
 import { SimulationEngine } from './simulation/Engine.js';
 
 // Premium Penguin Logo component
-function PenguinLogo({ size = 36 }) {
+export function PenguinLogo({ size = 36 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
       {/* Body silhouette */}
@@ -48,7 +49,7 @@ export const DEFAULT_CONFIG = {
   eggLossProb: 0.005,
   
   // Customization
-  initialViewMode: '3d',
+  initialViewMode: '2d',
   eggColor: '#ff8800',
   searchColor: '#ff0000',
   criticalTemp: 34,
@@ -132,8 +133,8 @@ export default function App() {
   // Initialize on mount
   useEffect(() => {
     initEngine();
-    if (location.pathname !== '/parameters') {
-      navigate('/parameters', { replace: true });
+    if (location.pathname !== '/' && location.pathname !== '/parameters' && location.pathname !== '/simulation') {
+      navigate('/', { replace: true });
     }
   }, []);
 
@@ -259,18 +260,28 @@ export default function App() {
     ? simState.environment.phaseList.reduce((s, p) => s + p.durationDays, 0)
     : 92;
 
+  const isLanding = location.pathname === '/';
+
+  if (isLanding) {
+    return (
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+      </Routes>
+    );
+  }
+
   return (
     <div className="app-container">
       {/* Header */}
       <header className="app-header">
         <div className="app-header__left">
-          <div className="app-header__icon-wrapper">
+          <div className="app-header__icon-wrapper" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
             <PenguinLogo size={36} />
           </div>
           <div>
-            <h1 className="app-header__title">Pingüinos Emperador — Supervivencia Antártica</h1>
+            <h1 className="app-header__title">Emperator Penguin Survival Sim</h1>        
             <p className="app-header__subtitle">
-              Simulación basada en agentes del huddle invernal · Modelo ABM
+              SimulaciÃ³n basada en agentes del huddle invernal Â· Modelo ABM
             </p>
           </div>
         </div>

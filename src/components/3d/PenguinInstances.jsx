@@ -9,7 +9,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { usePenguinGeometry } from './PenguinModel.jsx';
 import ImportedPenguinInstances from './ImportedPenguinInstances.jsx';
-import { isGlbAvailable } from './gltfAvailability.js';
+import { isGlbAvailable } from '../../utils/gltfAvailability.js';
 import { getTerrainHeight } from './AntarcticTerrain.jsx';
 import { PENGUIN_STATE } from '../../simulation/Penguin.js';
 

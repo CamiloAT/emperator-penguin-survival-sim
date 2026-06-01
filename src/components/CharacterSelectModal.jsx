@@ -4,87 +4,9 @@ import { ContactShadows, Environment, OrbitControls, useGLTF } from '@react-thre
 import { AlertTriangle, Check, ChevronLeft, ChevronRight, Gauge, X } from 'lucide-react';
 import * as THREE from 'three';
 import { createPenguinGeometry } from './3d/PenguinModel.jsx';
-import { isGlbAvailable } from './3d/gltfAvailability.js';
+import { isGlbAvailable } from '../utils/gltfAvailability.js';
 
 const MODEL_PATH = '/assets/models/penguin.glb';
-
-function mergeBufferGeometries(geos) {
-  let totalVerts = 0;
-  let totalIndices = 0;
-  const hasColors = geos.some(g => g.attributes.color);
-  for (const g of geos) {
-    totalVerts += g.attributes.position.count;
-    totalIndices += g.index ? g.index.count : g.attributes.position.count;
-  }
-
-  const positions = new Float32Array(totalVerts * 3);
-  const normals = new Float32Array(totalVerts * 3);
-  const uvs = new Float32Array(totalVerts * 2);
-  const colors = hasColors ? new Float32Array(totalVerts * 3) : null;
-  const indices = [];
-
-  let vertOffset = 0;
-  for (const g of geos) {
-    const pos = g.attributes.position;
-    const norm = g.attributes.normal;
-    const uv = g.attributes.uv;
-    const col = g.attributes.color;
-
-    for (let i = 0; i < pos.count; i++) {
-      const vi = (vertOffset + i) * 3;
-      positions[vi] = pos.getX(i);
-      positions[vi + 1] = pos.getY(i);
-      positions[vi + 2] = pos.getZ(i);
-      if (norm) {
-        normals[vi] = norm.getX(i);
-        normals[vi + 1] = norm.getY(i);
-        normals[vi + 2] = norm.getZ(i);
-      }
-      if (uv) {
-        const uvi = (vertOffset + i) * 2;
-        uvs[uvi] = uv.getX(i);
-        uvs[uvi + 1] = uv.getY(i);
-      }
-      if (col && colors) {
-        colors[vi] = col.getX(i);
-        colors[vi + 1] = col.getY(i);
-        colors[vi + 2] = col.getZ(i);
-      }
-    }
-
-    const idx = g.index;
-    if (idx) {
-      for (let i = 0; i < idx.count; i++) {
-        indices.push(idx.getX(i) + vertOffset);
-      }
-    } else {
-      for (let i = 0; i < pos.count; i++) {
-        indices.push(i + vertOffset);
-      }
-    }
-
-    vertOffset += pos.count;
-  }
-
-  const merged = new THREE.BufferGeometry();
-  merged.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  merged.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
-  if (uvs.some(v => v !== 0)) {
-    merged.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-  }
-  if (colors) {
-    merged.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  }
-
-  if (totalVerts > 65535) {
-    merged.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
-  } else {
-    merged.setIndex(new THREE.BufferAttribute(new Uint16Array(indices), 1));
-  }
-
-  merged.computeVertexNormals();
-  return merged;
-}
 
 function SpinningGroup({ children }) {
   const ref = useRef();
@@ -106,63 +28,42 @@ function ProceduralPreview() {
 
   return (
     <SpinningGroup>
-      <mesh geometry={geometry} material={material} castShadow receiveShadow position={[0, -0.25, 0]} />
+      <mesh geometry={geometry} material={material} castShadow receiveShadow position={[0, -0.19, 0]} />
     </SpinningGroup>
   );
 }
 
 function GlbPreview({ path }) {
   const gltf = useGLTF(path);
-  const { geometry, material } = useMemo(() => {
+  const scene = useMemo(() => {
     const cloned = gltf.scene.clone(true);
     cloned.updateWorldMatrix(true, true);
 
-    const meshes = [];
     cloned.traverse((child) => {
-      if (child.isMesh && child.geometry) {
-        meshes.push(child);
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
       }
     });
 
-    if (meshes.length === 0) return { geometry: null, material: null };
-
-    const geos = meshes.map((m) => {
-      const g = m.geometry.clone();
-      g.applyMatrix4(m.matrixWorld);
-      return g;
-    });
-
-    const merged = geos.length === 1 ? geos[0] : mergeBufferGeometries(geos);
-    geos.forEach((g) => { if (g !== merged) g.dispose(); });
-
-    merged.computeBoundingBox();
-    const box = merged.boundingBox;
+    const box = new THREE.Box3().setFromObject(cloned);
     const size = new THREE.Vector3();
     const center = new THREE.Vector3();
     box.getSize(size);
     box.getCenter(center);
 
     const maxAxis = Math.max(size.x, size.y, size.z) || 1;
-    const s = 0.95 / maxAxis;
-    const transform = new THREE.Matrix4()
-      .makeTranslation(-center.x, -box.min.y, -center.z)
-      .premultiply(new THREE.Matrix4().makeScale(s, s, s));
+    const s = 1.4 / maxAxis;
 
-    merged.applyMatrix4(transform);
-    merged.computeVertexNormals();
+    cloned.position.set(-center.x, -box.min.y -1.1, -center.z);
+    cloned.scale.set(s, s, s);
 
-    const srcMat = meshes[0].material;
-    const mat = (Array.isArray(srcMat) ? srcMat[0] : srcMat).clone();
-    mat.vertexColors = false;
-
-    return { geometry: merged, material: mat };
+    return cloned;
   }, [gltf.scene]);
-
-  if (!geometry || !material) return null;
 
   return (
     <SpinningGroup>
-      <mesh geometry={geometry} material={material} castShadow receiveShadow />
+      <primitive object={scene} />
     </SpinningGroup>
   );
 }
@@ -170,7 +71,7 @@ function GlbPreview({ path }) {
 function CharacterPreview({ type, assetAvailable }) {
   return (
     <Canvas
-      camera={{ position: [0, 0.8, 2.4], fov: 40 }}
+      camera={{ position: [0, 1, 2.0], fov: 40 }}
       shadows
       dpr={[1, 1.5]}
       gl={{ antialias: true, alpha: true }}
@@ -183,7 +84,7 @@ function CharacterPreview({ type, assetAvailable }) {
         {type === 'procedural' && <ProceduralPreview />}
         {type === 'sketchfab' && assetAvailable && <GlbPreview path={MODEL_PATH} />}
       </Suspense>
-      <ContactShadows position={[0, -0.62, 0]} opacity={0.45} scale={4} blur={2} far={3} />
+      <ContactShadows position={[0, -2.2, 0]} opacity={0.45} scale={7} blur={2} far={5} />
       <OrbitControls enableZoom={false} enablePan={false} minPolarAngle={0.75} maxPolarAngle={1.65} />
     </Canvas>
   );

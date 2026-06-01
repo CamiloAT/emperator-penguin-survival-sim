@@ -969,13 +969,14 @@ body::before {
 
 .character-carousel {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 0.5rem;
   margin: 0.75rem 0;
 }
 
 .character-carousel__arrow {
   flex-shrink: 0;
+  align-self: center;
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -997,10 +998,10 @@ body::before {
 
 .character-carousel__preview {
   flex: 1;
-  min-height: 240px;
+  min-height: 350px;
   border-radius: var(--radius-md);
   overflow: hidden;
-  background: rgba(0, 0, 0, 0.15);
+  background: #b6b6b6;
   position: relative;
 }
 

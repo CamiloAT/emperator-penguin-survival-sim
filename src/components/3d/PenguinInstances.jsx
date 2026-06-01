@@ -4,10 +4,12 @@
  * Each penguin's position, rotation, and color are updated every frame
  * based on the simulation state from Engine.js.
  */
-import { useRef, useMemo, useEffect } from 'react';
+import { Component, useRef, useMemo, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { usePenguinGeometry } from './PenguinModel.jsx';
+import ImportedPenguinInstances from './ImportedPenguinInstances.jsx';
+import { isGlbAvailable } from './gltfAvailability.js';
 import { getTerrainHeight } from './AntarcticTerrain.jsx';
 import { PENGUIN_STATE } from '../../simulation/Penguin.js';
 
@@ -42,7 +44,69 @@ function getTempColor(penguin) {
   return _color.clone();
 }
 
-export default function PenguinInstances({ simState, gridSize, config }) {
+const DEFAULT_IMPORTED_MODEL_PATH = '/assets/models/penguin.glb';
+
+class ImportedPenguinErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { failed: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.resetKey !== this.props.resetKey && this.state.failed) {
+      this.setState({ failed: false });
+    }
+  }
+
+  render() {
+    if (this.state.failed) return this.props.fallback;
+    return this.props.children;
+  }
+}
+
+export default function PenguinInstances(props) {
+  const wantsImported = props.config?.penguinModel === 'sketchfab';
+
+  if (wantsImported) {
+    return <ImportedPenguinGate {...props} />;
+  }
+
+  return <ProceduralPenguinInstances {...props} />;
+}
+
+function ImportedPenguinGate(props) {
+  const modelPath = props.config?.penguinModelPath || DEFAULT_IMPORTED_MODEL_PATH;
+  const [isAvailable, setIsAvailable] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsAvailable(false);
+
+    isGlbAvailable(modelPath).then((available) => {
+      if (!cancelled) setIsAvailable(available);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [modelPath]);
+
+  const fallback = <ProceduralPenguinInstances {...props} />;
+
+  if (!isAvailable) return fallback;
+
+  return (
+    <ImportedPenguinErrorBoundary resetKey={modelPath} fallback={fallback}>
+      <ImportedPenguinInstances {...props} />
+    </ImportedPenguinErrorBoundary>
+  );
+}
+
+function ProceduralPenguinInstances({ simState, gridSize, config }) {
   useEffect(() => {
     if (config?.searchColor) {
       COLORS.searching.set(config.searchColor);

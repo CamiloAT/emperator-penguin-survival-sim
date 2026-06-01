@@ -1,6 +1,6 @@
-import { Settings, Users, Thermometer, Zap, Egg, Play, Pause, RotateCcw, FastForward, Square, RefreshCw, Award, Palette, Monitor } from 'lucide-react';
+import { Settings, Users, Thermometer, Zap, Egg, Play, Pause, RotateCcw, FastForward, Square, RefreshCw, Award, Palette, Monitor, UserRound } from 'lucide-react';
 
-export default function ControlPanel({ config, setConfig, running, onStart, onPause, onReset, onSpeedChange, speed, finished, onOpenSettings, onOpenColors, onResetDefaults, onForceEnd, onShowResults }) {
+export default function ControlPanel({ config, setConfig, running, onStart, onPause, onReset, onSpeedChange, speed, finished, onOpenSettings, onOpenColors, onOpenCharacterSelect, onResetDefaults, onForceEnd, onShowResults, viewMode }) {
   const handleChange = (key, value) => {
     setConfig(prev => ({ ...prev, [key]: value }));
   };
@@ -98,6 +98,17 @@ export default function ControlPanel({ config, setConfig, running, onStart, onPa
           style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center' }}
         >
           <Palette size={14} /> Personalizar Colores
+        </button>
+
+        <button
+          type="button"
+          className="btn btn--ghost btn--full"
+          onClick={onOpenCharacterSelect}
+          disabled={viewMode === '2d'}
+          title={viewMode === '2d' ? 'Cambia a vista 3D para seleccionar el modelo de pingüino' : ''}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center', opacity: viewMode === '2d' ? 0.4 : 1 }}
+        >
+          <UserRound size={14} /> Seleccionar Pingüino
         </button>
 
         {/* Reset to defaults */}

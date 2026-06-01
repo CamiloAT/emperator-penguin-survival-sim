@@ -9,6 +9,7 @@ import LoadingScreen from './components/LoadingScreen.jsx';
 import AdvancedStatsModal from './components/AdvancedStatsModal.jsx';
 import ConfirmModal from './components/ConfirmModal.jsx';
 import ColorSettingsModal from './components/ColorSettingsModal.jsx';
+import CharacterSelectModal from './components/CharacterSelectModal.jsx';
 import LandingPage from './components/LandingPage.jsx';
 import { SimulationEngine } from './simulation/Engine.js';
 
@@ -52,6 +53,8 @@ export const DEFAULT_CONFIG = {
   initialViewMode: '2d',
   eggColor: '#ff8800',
   searchColor: '#ff0000',
+  penguinModel: 'procedural',
+  penguinModelPath: '/assets/models/penguin.glb',
   criticalTemp: 34,
   searchRadius: 2,
 
@@ -109,6 +112,7 @@ export default function App() {
   const [showAdvancedStats, setShowAdvancedStats] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showColorModal, setShowColorModal] = useState(false);
+  const [showCharacterModal, setShowCharacterModal] = useState(false);
   const [viewMode, setViewMode] = useState('3d');
   const [isNightMode, setIsNightMode] = useState(false);
   const engineRef = useRef(null);
@@ -305,14 +309,16 @@ export default function App() {
           <Route path="/parameters" element={
             isStarting ? <LoadingScreen /> : (
               <>
-                <ControlPanel
-                  config={config}
-                  setConfig={setConfig}
-                  onStart={handleStart}
-                  onResetDefaults={handleResetDefaults}
-                  onOpenSettings={() => setShowSettingsModal(true)}
-                  onOpenColors={() => setShowColorModal(true)}
-                />
+                  <ControlPanel
+                    config={config}
+                    setConfig={setConfig}
+                    viewMode={viewMode}
+                    onStart={handleStart}
+                    onResetDefaults={handleResetDefaults}
+                    onOpenSettings={() => setShowSettingsModal(true)}
+                    onOpenColors={() => setShowColorModal(true)}
+                    onOpenCharacterSelect={() => setShowCharacterModal(true)}
+                  />
                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: 'calc(100vh - 120px)' }}>
                   <SimulationView simState={simState} config={config} viewMode={viewMode} setViewMode={setViewMode} isNightMode={isNightMode} setIsNightMode={setIsNightMode} />
                 </div>
@@ -397,6 +403,14 @@ export default function App() {
         onClose={() => setShowColorModal(false)}
         config={config}
         setConfig={setConfig}
+      />
+
+      <CharacterSelectModal
+        isOpen={showCharacterModal}
+        onClose={() => setShowCharacterModal(false)}
+        config={config}
+        setConfig={setConfig}
+        viewMode={viewMode}
       />
     </div>
   );

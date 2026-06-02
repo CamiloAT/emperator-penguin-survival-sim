@@ -16,6 +16,10 @@ const COLORS = {
   dead: new THREE.Color('#555555'),
 };
 
+const IMPORTED_TARGET_SIZE = {
+  sketchfab: 1.0,
+};
+
 function getTempColor(penguin) {
   if (penguin.state === PENGUIN_STATE.SEARCHING_EGG) return COLORS.searching;
   if (penguin.state === PENGUIN_STATE.DEAD) return COLORS.dead;
@@ -47,8 +51,14 @@ export default function ImportedPenguinInstances({ simState, gridSize, config })
 
   const penguinPool = useMemo(() => {
     const pool = [];
+    const tempBox = new THREE.Box3();
+    const tempSize = new THREE.Vector3();
+    const modelType = config?.penguinModel;
+    const targetSize = IMPORTED_TARGET_SIZE[modelType] || 0.9;
+
     for (let i = 0; i < maxCount; i++) {
       const clone = gltf.scene.clone(true);
+      clone.updateWorldMatrix(true, true);
       clone.traverse((child) => {
         if (child.isMesh) {
           child.castShadow = true;
@@ -59,11 +69,17 @@ export default function ImportedPenguinInstances({ simState, gridSize, config })
           }
         }
       });
+
+      tempBox.setFromObject(clone);
+      tempBox.getSize(tempSize);
+      const maxAxis = Math.max(tempSize.x, tempSize.y, tempSize.z) || 1;
+      clone.userData.autoScale = targetSize / maxAxis;
+      clone.userData.originY = tempBox.min.y;
       clone.visible = false;
       pool.push(clone);
     }
     return pool;
-  }, [gltf.scene, maxCount]);
+  }, [gltf.scene, maxCount, config?.penguinModel]);
 
   const eggGeometry = useMemo(() => {
     const geo = new THREE.SphereGeometry(0.18, 16, 12);
@@ -107,8 +123,9 @@ export default function ImportedPenguinInstances({ simState, gridSize, config })
       const wy = getTerrainHeight(wx, wz);
       const rotY = (p.id * 1.37) % (Math.PI * 2);
 
-      clone.position.set(wx, wy, wz);
-      clone.scale.set(0.3, 0.3, 0.3);
+      const s = clone.userData.autoScale || 0.3;
+      clone.position.set(wx, wy - clone.userData.originY * s, wz);
+      clone.scale.set(s, s, s);
       clone.rotation.set(0, rotY, 0);
 
       if (p.state === PENGUIN_STATE.SEARCHING_EGG) {

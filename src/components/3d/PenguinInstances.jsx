@@ -9,6 +9,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { usePenguinGeometry } from './PenguinModel.jsx';
 import ImportedPenguinInstances from './ImportedPenguinInstances.jsx';
+import AnimatedPenguinInstances from './AnimatedPenguinInstances.jsx';
 import { isGlbAvailable } from '../../utils/gltfAvailability.js';
 import { getTerrainHeight } from './AntarcticTerrain.jsx';
 import { PENGUIN_STATE } from '../../simulation/Penguin.js';
@@ -69,9 +70,13 @@ class ImportedPenguinErrorBoundary extends Component {
 }
 
 export default function PenguinInstances(props) {
-  const wantsImported = props.config?.penguinModel === 'sketchfab';
+  const modelType = props.config?.penguinModel;
 
-  if (wantsImported) {
+  if (modelType === 'low_animated' || modelType === 'premium_animated') {
+    return <AnimatedPenguinGate {...props} modelType={modelType} />;
+  }
+
+  if (modelType === 'sketchfab') {
     return <ImportedPenguinGate {...props} />;
   }
 
@@ -102,6 +107,34 @@ function ImportedPenguinGate(props) {
   return (
     <ImportedPenguinErrorBoundary resetKey={modelPath} fallback={fallback}>
       <ImportedPenguinInstances {...props} />
+    </ImportedPenguinErrorBoundary>
+  );
+}
+
+function AnimatedPenguinGate(props) {
+  const modelPath = props.config?.penguinModelPath || DEFAULT_IMPORTED_MODEL_PATH;
+  const [isAvailable, setIsAvailable] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsAvailable(false);
+
+    isGlbAvailable(modelPath).then((available) => {
+      if (!cancelled) setIsAvailable(available);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [modelPath]);
+
+  const fallback = <ProceduralPenguinInstances {...props} />;
+
+  if (!isAvailable) return fallback;
+
+  return (
+    <ImportedPenguinErrorBoundary resetKey={modelPath} fallback={fallback}>
+      <AnimatedPenguinInstances {...props} />
     </ImportedPenguinErrorBoundary>
   );
 }

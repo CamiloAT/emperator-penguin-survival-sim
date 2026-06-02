@@ -285,7 +285,7 @@ export default function App() {
           <div>
             <h1 className="app-header__title">Emperator Penguin Survival Sim</h1>        
             <p className="app-header__subtitle">
-              SimulaciÃ³n basada en agentes del huddle invernal Â· Modelo ABM
+              Simulación basada en agentes del huddle invernal · Modelo ABM
             </p>
           </div>
         </div>

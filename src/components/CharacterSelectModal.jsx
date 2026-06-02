@@ -3,13 +3,58 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows, Environment, OrbitControls, useGLTF } from '@react-three/drei';
 import { AlertTriangle, Check, ChevronLeft, ChevronRight, Gauge, X } from 'lucide-react';
 import * as THREE from 'three';
+import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { createPenguinGeometry } from './3d/PenguinModel.jsx';
 import { isGlbAvailable } from '../utils/gltfAvailability.js';
 
-const MODEL_PATH = '/assets/models/penguin.glb';
+// Tamaño objetivo en el viewport de preview (unidades world de la camara del modal)
+const PREVIEW_TARGET_SIZE = {
+  sketchfab: 1.4,
+  low_animated: 1.2,
+  premium_animated: 1.2,
+};
+
+// Altura y centro nativo medido de los accessors del GLB.
+// Esto permite centrar y escalar los modelos estaticos y animados
+// perfectamente sin clonar la escena (evitando bugs de SkinnedMesh).
+// Nota: Para premium_animated dividimos por 100 para contrarrestar
+// la escala de 100x del nodo Armature interna del modelo.
+const GLB_METADATA = {
+  sketchfab: {
+    nativeHeight: 5.14,
+    centerX: -0.24,
+    centerY: 2.03,
+    centerZ: 0.00,
+    originY: 2.03,
+  },
+  low_animated: {
+    nativeHeight: 100.9882,
+    centerX: 0.00,
+    centerY: 50.4750,
+    centerZ: 3.9418,
+    originY: 50.4750,  // Centro vertical = mitad del modelo → lo centra perfectamente en la preview
+  },
+  premium_animated: {
+    nativeHeight: 0.39,
+    centerX: 0.00,
+    centerY: -0.1862,
+    centerZ: -0.2,
+    originY: -0.09,
+  },
+};
+
+// Ángulo inicial de presentación del pinguino en la preview (en radianes).
+// 0 = de espalda, Math.PI = de frente, Math.PI/2 = de lado izquierdo.
+// Ajusta este valor para cambiar cuál lado presenta la preview del selector.
+const PREVIEW_INITIAL_ROTATION = Math.PI; // de frente
 
 function SpinningGroup({ children }) {
   const ref = useRef();
+
+  // Empezamos en PREVIEW_INITIAL_ROTATION para que el pinguino aparezca de frente
+  useEffect(() => {
+    if (ref.current) ref.current.rotation.y = PREVIEW_INITIAL_ROTATION;
+  }, []);
 
   useFrame((_, delta) => {
     if (ref.current) ref.current.rotation.y += delta * 0.55;
@@ -33,42 +78,85 @@ function ProceduralPreview() {
   );
 }
 
-function GlbPreview({ path }) {
+function GlbPreview({ type, path }) {
   const gltf = useGLTF(path);
-  const scene = useMemo(() => {
-    const cloned = gltf.scene.clone(true);
-    cloned.updateWorldMatrix(true, true);
+  const mixerRef = useRef(null);
 
-    cloned.traverse((child) => {
+  // Creamos un clon independiente de la escena para el preview.
+  // Esto es CRÍTICO: si usamos gltf.scene directamente, el AnimationMixer
+  // del preview y el de la simulación comparten los mismos huesos, causando
+  // que los colores y las deformaciones del grid se propaguen aquí y viceversa.
+  const previewClone = useMemo(() => {
+    const clone = SkeletonUtils.clone(gltf.scene);
+    // Restablecer colores de materiales a blanco (por defecto)
+    clone.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true;
         child.receiveShadow = true;
+        if (child.material) {
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach(m => {
+            m.color.set('#ffffff');
+          });
+        }
       }
     });
-
-    const box = new THREE.Box3().setFromObject(cloned);
-    const size = new THREE.Vector3();
-    const center = new THREE.Vector3();
-    box.getSize(size);
-    box.getCenter(center);
-
-    const maxAxis = Math.max(size.x, size.y, size.z) || 1;
-    const s = 1.4 / maxAxis;
-
-    cloned.position.set(-center.x, -box.min.y -1.1, -center.z);
-    cloned.scale.set(s, s, s);
-
-    return cloned;
+    return clone;
   }, [gltf.scene]);
+
+  // AnimationMixer ligado al clon, no a la escena original
+  useEffect(() => {
+    if (!gltf.animations || gltf.animations.length === 0) return;
+
+    const mixer = new THREE.AnimationMixer(previewClone);
+    mixerRef.current = mixer;
+
+    const findClip = (clips, names) => {
+      for (const name of names) {
+        const found = clips.find(c => c.name.toLowerCase().includes(name.toLowerCase()));
+        if (found) return found;
+      }
+      return clips[0];
+    };
+
+    const clip = findClip(gltf.animations, ['idle', 'Idle', 'stand', 'Stand', 'breath', 'Breath', 'walk', 'Walk']);
+    if (clip) {
+      const action = mixer.clipAction(clip);
+      action.play();
+    }
+
+    return () => {
+      mixer.stopAllAction();
+      mixer.uncacheRoot(previewClone);
+    };
+  }, [gltf, previewClone]);
+
+  useFrame((_, delta) => {
+    if (mixerRef.current) {
+      mixerRef.current.update(delta);
+    }
+  });
+
+  const meta = GLB_METADATA[type];
+  if (!meta) return null;
+
+  const targetSize = PREVIEW_TARGET_SIZE[type] || 1.0;
+  const s = targetSize / meta.nativeHeight;
+  const yOffset = meta.originY !== undefined ? meta.originY : meta.centerY;
 
   return (
     <SpinningGroup>
-      <primitive object={scene} />
+      <group scale={[s, s, s]}>
+        <primitive
+          object={previewClone}
+          position={[-meta.centerX, -yOffset, -meta.centerZ]}
+        />
+      </group>
     </SpinningGroup>
   );
 }
 
-function CharacterPreview({ type, assetAvailable }) {
+function CharacterPreview({ type, assetAvailable, path }) {
   return (
     <Canvas
       camera={{ position: [0, 1, 2.0], fov: 40 }}
@@ -82,7 +170,7 @@ function CharacterPreview({ type, assetAvailable }) {
       <Environment preset="city" />
       <Suspense fallback={null}>
         {type === 'procedural' && <ProceduralPreview />}
-        {type === 'sketchfab' && assetAvailable && <GlbPreview path={MODEL_PATH} />}
+        {type !== 'procedural' && assetAvailable && path && <GlbPreview type={type} path={path} />}
       </Suspense>
       <ContactShadows position={[0, -2.2, 0]} opacity={0.45} scale={7} blur={2} far={5} />
       <OrbitControls enableZoom={false} enablePan={false} minPolarAngle={0.75} maxPolarAngle={1.65} />
@@ -119,6 +207,7 @@ const OPTIONS = [
     badge: 'Ligero',
     performance: 'Recomendado para colonias grandes',
     warning: 'Usa geometria procedural instanciada. Es la opcion mas estable y consume menos recursos.',
+    glbPath: null,
   },
   {
     id: 'sketchfab',
@@ -126,25 +215,50 @@ const OPTIONS = [
     badge: 'Detalle',
     performance: 'Puede exigir mas si subes mucho la colonia',
     warning: 'Modelo externo por Noah Hahn bajo CC Attribution. Si el equipo se siente lento, vuelve al clasico.',
+    glbPath: '/assets/models/penguin.glb',
+  },
+  {
+    id: 'low_animated',
+    name: 'Pinguino Animado Low',
+    badge: 'Animado',
+    performance: 'Con animaciones basicas. Modelo mas ligero que el premium.',
+    warning: 'Modelo low-poly animado. Consume mas recursos que un modelo estatico por las animaciones en tiempo real. Reduce el tamano de colonia si notas lentitud.',
+    glbPath: '/assets/models/penguin_low_animated.glb',
+  },
+  {
+    id: 'premium_animated',
+    name: 'Pinguino Animado Premium',
+    badge: 'Premium',
+    performance: 'Animaciones completas (caminar, dormir). Alta calidad.',
+    warning: 'Modelo de alta calidad con multiples animaciones. MUY exigente en recursos. Solo recomendado para colonias pequenas (< 50 pinguinos) o equipos con GPU potente.',
+    glbPath: '/assets/models/penguin_premium_animated.glb',
   },
 ];
 
 export default function CharacterSelectModal({ isOpen, onClose, config, setConfig, viewMode }) {
-  const [assetAvailable, setAssetAvailable] = useState(false);
-  const [checkingAsset, setCheckingAsset] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(() => {
     const idx = OPTIONS.findIndex(o => o.id === (config?.penguinModel || 'procedural'));
     return idx >= 0 ? idx : 0;
   });
   const selected = config?.penguinModel || 'procedural';
 
+  const current = OPTIONS[currentIndex];
+  const isSelected = selected === current.id;
+  const hasGlb = !!current.glbPath;
+
+  const [assetAvailable, setAssetAvailable] = useState(!hasGlb);
+  const [checkingAsset, setCheckingAsset] = useState(false);
+
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !hasGlb) {
+      setAssetAvailable(true);
+      return;
+    }
 
     let cancelled = false;
     setCheckingAsset(true);
 
-    isGlbAvailable(MODEL_PATH)
+    isGlbAvailable(current.glbPath)
       .then((available) => {
         if (!cancelled) setAssetAvailable(available);
       })
@@ -158,11 +272,9 @@ export default function CharacterSelectModal({ isOpen, onClose, config, setConfi
     return () => {
       cancelled = true;
     };
-  }, [isOpen]);
+  }, [isOpen, currentIndex, hasGlb, current.glbPath]);
 
-  const current = OPTIONS[currentIndex];
-  const isSelected = selected === current.id;
-  const disabled = (current.id === 'sketchfab' && !assetAvailable) || viewMode === '2d';
+  const disabled = (hasGlb && !assetAvailable) || viewMode === '2d';
 
   const handlePrev = () => {
     setCurrentIndex(i => (i - 1 + OPTIONS.length) % OPTIONS.length);
@@ -173,13 +285,15 @@ export default function CharacterSelectModal({ isOpen, onClose, config, setConfi
   };
 
   const handleSelect = (modelId) => {
-    if (modelId === 'sketchfab' && !assetAvailable) return;
     if (viewMode === '2d') return;
+    const option = OPTIONS.find(o => o.id === modelId);
+    if (!option) return;
+    if (option.glbPath && !assetAvailable) return;
 
     setConfig(prev => ({
       ...prev,
       penguinModel: modelId,
-      penguinModelPath: MODEL_PATH,
+      penguinModelPath: option.glbPath || '',
     }));
   };
 
@@ -231,11 +345,11 @@ export default function CharacterSelectModal({ isOpen, onClose, config, setConfi
               resetKey={`${current.id}-${assetAvailable}`}
               fallback={<div className="character-card__missing">Modelo incompleto</div>}
             >
-              <CharacterPreview type={current.id} assetAvailable={assetAvailable} />
+              <CharacterPreview type={current.id} assetAvailable={assetAvailable} path={current.glbPath} />
             </PreviewErrorBoundary>
             {disabled && (
               <div className="character-card__missing">
-                {checkingAsset && current.id === 'sketchfab' ? 'Buscando modelo...' : 'Falta el archivo .glb'}
+                {checkingAsset ? 'Buscando modelo...' : 'Falta el archivo .glb'}
               </div>
             )}
           </div>

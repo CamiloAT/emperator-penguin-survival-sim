@@ -26,13 +26,17 @@ const GLB_METADATA = {
     centerY: 2.03,
     centerZ: 0.00,
     originY: 2.03,
+    resetColors: false,      // Modelo estático: conservar sus colores originales
+    initialRotation: Math.PI * 0.75, // Angulo en radianes — 0=espalda, PI=frente, PI/2=izquierda
   },
   low_animated: {
     nativeHeight: 100.9882,
     centerX: 0.00,
     centerY: 50.4750,
     centerZ: 3.9418,
-    originY: 50.4750,  // Centro vertical = mitad del modelo → lo centra perfectamente en la preview
+    originY: 50.4750,
+    resetColors: true,       // Animado: resetear a blanco para evitar contaminacion del grid
+    initialRotation: Math.PI, // de frente
   },
   premium_animated: {
     nativeHeight: 0.39,
@@ -40,21 +44,18 @@ const GLB_METADATA = {
     centerY: -0.1862,
     centerZ: -0.2,
     originY: -0.09,
+    resetColors: true,       // Animado: resetear a blanco para evitar contaminacion del grid
+    initialRotation: Math.PI, // de frente
   },
 };
 
-// Ángulo inicial de presentación del pinguino en la preview (en radianes).
-// 0 = de espalda, Math.PI = de frente, Math.PI/2 = de lado izquierdo.
-// Ajusta este valor para cambiar cuál lado presenta la preview del selector.
-const PREVIEW_INITIAL_ROTATION = Math.PI; // de frente
-
-function SpinningGroup({ children }) {
+function SpinningGroup({ children, initialRotation = Math.PI }) {
   const ref = useRef();
 
-  // Empezamos en PREVIEW_INITIAL_ROTATION para que el pinguino aparezca de frente
+  // Empezamos en initialRotation para que el pinguino aparezca en el angulo correcto
   useEffect(() => {
-    if (ref.current) ref.current.rotation.y = PREVIEW_INITIAL_ROTATION;
-  }, []);
+    if (ref.current) ref.current.rotation.y = initialRotation;
+  }, [initialRotation]);
 
   useFrame((_, delta) => {
     if (ref.current) ref.current.rotation.y += delta * 0.55;
@@ -88,12 +89,15 @@ function GlbPreview({ type, path }) {
   // que los colores y las deformaciones del grid se propaguen aquí y viceversa.
   const previewClone = useMemo(() => {
     const clone = SkeletonUtils.clone(gltf.scene);
-    // Restablecer colores de materiales a blanco (por defecto)
+    const meta = GLB_METADATA[type];
+    // Solo resetear colores en modelos animados que comparten materiales con la simulacion.
+    // Para modelos estaticos (sketchfab) conservamos sus colores originales del GLB.
+    const shouldReset = meta?.resetColors ?? false;
     clone.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true;
         child.receiveShadow = true;
-        if (child.material) {
+        if (shouldReset && child.material) {
           const mats = Array.isArray(child.material) ? child.material : [child.material];
           mats.forEach(m => {
             m.color.set('#ffffff');
@@ -102,7 +106,7 @@ function GlbPreview({ type, path }) {
       }
     });
     return clone;
-  }, [gltf.scene]);
+  }, [gltf.scene, type]);
 
   // AnimationMixer ligado al clon, no a la escena original
   useEffect(() => {
@@ -145,7 +149,7 @@ function GlbPreview({ type, path }) {
   const yOffset = meta.originY !== undefined ? meta.originY : meta.centerY;
 
   return (
-    <SpinningGroup>
+    <SpinningGroup initialRotation={meta.initialRotation ?? Math.PI}>
       <group scale={[s, s, s]}>
         <primitive
           object={previewClone}

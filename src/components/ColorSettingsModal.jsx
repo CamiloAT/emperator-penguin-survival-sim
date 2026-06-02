@@ -1,4 +1,5 @@
 import { X, Check } from 'lucide-react';
+import { useHotkey } from '@tanstack/react-hotkeys';
 
 const COLOR_OPTIONS = [
   { name: 'Naranja Vivo', value: '#ff8800' },
@@ -11,6 +12,8 @@ const COLOR_OPTIONS = [
 ];
 
 export default function ColorSettingsModal({ isOpen, onClose, config, setConfig }) {
+  useHotkey('Escape', () => onClose(), { enabled: isOpen });
+
   if (!isOpen) return null;
 
   const handleColorChange = (key, value) => {

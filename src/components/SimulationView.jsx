@@ -2,8 +2,12 @@
  * SimulationView.jsx
  * Wrapper that lets the user toggle between the 2D canvas and the 3D scene.
  * Both views receive the same simState from the Engine.
+ *
+ * El estado de transición (isSwitching) y el setter del modo de vista vienen
+ * desde App.jsx, para que la animación del huevo se dispare igual desde el
+ * botón aquí como desde el shortcut 'V'.
  */
-import { useState, lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense } from 'react';
 import SimulationCanvas from './SimulationCanvas.jsx';
 import { Box, Layers, Sun, Sunset, Moon, Snowflake } from 'lucide-react';
 
@@ -15,16 +19,11 @@ const TIME_ICONS = { day: Sun, sunset: Sunset, night: Moon };
 const TIME_LABELS = { day: 'Día', sunset: 'Atardecer', night: 'Noche' };
 const TIME_NEXT = { day: 'Atardecer', sunset: 'Noche', night: 'Día' };
 
-export default function SimulationView({ simState, config, viewMode, setViewMode, timeOfDay, setTimeOfDay, isSnowEnabled, setIsSnowEnabled }) {
-  const [isSwitching, setIsSwitching] = useState(false);
-
+export default function SimulationView({ simState, config, viewMode, setViewMode, isSwitching = false, timeOfDay, setTimeOfDay, isSnowEnabled, setIsSnowEnabled }) {
   const handleToggle = (mode) => {
     if (mode === viewMode || isSwitching) return;
-    setIsSwitching(true);
+    // Delegamos al padre: él maneja isSwitching + setViewMode con timer.
     setViewMode(mode);
-    setTimeout(() => {
-      setIsSwitching(false);
-    }, 2000);
   };
 
   const cycleTimeOfDay = () => {

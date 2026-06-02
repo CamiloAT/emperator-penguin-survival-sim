@@ -1,6 +1,7 @@
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows, Environment, OrbitControls, useGLTF } from '@react-three/drei';
+import { useHotkey } from '@tanstack/react-hotkeys';
 import { AlertTriangle, Check, ChevronLeft, ChevronRight, Gauge, X } from 'lucide-react';
 import * as THREE from 'three';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
@@ -263,6 +264,8 @@ export default function CharacterSelectModal({ isOpen, onClose, config, setConfi
 
   const [assetAvailable, setAssetAvailable] = useState(!hasGlb);
   const [checkingAsset, setCheckingAsset] = useState(false);
+
+  useHotkey('Escape', () => onClose(), { enabled: isOpen });
 
   useEffect(() => {
     if (!isOpen || !hasGlb) {

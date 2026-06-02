@@ -1,7 +1,10 @@
 import React from 'react';
+import { useHotkey } from '@tanstack/react-hotkeys';
 import { AlertCircle, RotateCcw } from 'lucide-react';
 
 export default function ConfirmModal({ isOpen, onClose, onConfirm, title, message, confirmText }) {
+  useHotkey('Escape', () => onClose(), { enabled: isOpen });
+
   if (!isOpen) return null;
 
   return (

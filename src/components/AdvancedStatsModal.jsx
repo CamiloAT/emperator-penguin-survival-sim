@@ -1,8 +1,11 @@
 import React from 'react';
+import { useHotkey } from '@tanstack/react-hotkeys';
 import { X, AlertTriangle, Activity } from 'lucide-react';
 import Charts from './Charts.jsx';
 
 export default function AdvancedStatsModal({ isOpen, onClose, simState }) {
+  useHotkey('Escape', () => onClose(), { enabled: isOpen });
+
   if (!isOpen || !simState) return null;
 
   return (

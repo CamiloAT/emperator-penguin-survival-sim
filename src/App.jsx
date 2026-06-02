@@ -1,5 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { useHotkeys } from '@tanstack/react-hotkeys';
+import { Keyboard } from 'lucide-react';
 import SimulationView from './components/SimulationView.jsx';
 import ControlPanel from './components/ControlPanel.jsx';
 import ActivePanel from './components/ActivePanel.jsx';
@@ -10,9 +12,12 @@ import AdvancedStatsModal from './components/AdvancedStatsModal.jsx';
 import ConfirmModal from './components/ConfirmModal.jsx';
 import ColorSettingsModal from './components/ColorSettingsModal.jsx';
 import CharacterSelectModal from './components/CharacterSelectModal.jsx';
+import ShortcutsHelpModal from './components/ShortcutsHelpModal.jsx';
 import LandingPage from './components/LandingPage.jsx';
 import DocsPage from './components/DocsPage.jsx';
 import { SimulationEngine } from './simulation/Engine.js';
+
+const TIME_CYCLE = ['day', 'sunset', 'night'];
 
 // Premium Penguin Logo component
 export function PenguinLogo({ size = 36 }) {
@@ -114,7 +119,10 @@ export default function App() {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showColorModal, setShowColorModal] = useState(false);
   const [showCharacterModal, setShowCharacterModal] = useState(false);
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [viewMode, setViewMode] = useState('3d');
+  const [isViewSwitching, setIsViewSwitching] = useState(false);
+  const viewSwitchTimerRef = useRef(null);
   const [timeOfDay, setTimeOfDay] = useState('day');
   const [isSnowEnabled, setIsSnowEnabled] = useState(true);
   const [isEnteringParams, setIsEnteringParams] = useState(false);
@@ -263,12 +271,97 @@ export default function App() {
     initEngine(newConfig);
   }, [speed]);
 
+  // ---------- Shortcuts handlers ----------
+  // Centralizada: cambia la vista con la animación del huevo (2s).
+  // Usada por el botón del SimulationView y por el shortcut 'V'.
+  const handleSetViewMode = useCallback((mode) => {
+    if (mode === viewMode || isViewSwitching) return;
+    setIsViewSwitching(true);
+    setViewMode(mode);
+    if (viewSwitchTimerRef.current) clearTimeout(viewSwitchTimerRef.current);
+    viewSwitchTimerRef.current = setTimeout(() => setIsViewSwitching(false), 2000);
+  }, [viewMode, isViewSwitching]);
+
+  const handleToggleView = useCallback(() => {
+    handleSetViewMode(viewMode === '2d' ? '3d' : '2d');
+  }, [viewMode, handleSetViewMode]);
+
+  // Cleanup del timer al desmontar
+  useEffect(() => () => {
+    if (viewSwitchTimerRef.current) clearTimeout(viewSwitchTimerRef.current);
+  }, []);
+
+  const handleCycleTimeOfDay = useCallback(() => {
+    setTimeOfDay(prev => {
+      const idx = TIME_CYCLE.indexOf(prev);
+      return TIME_CYCLE[(idx + 1) % TIME_CYCLE.length];
+    });
+  }, []);
+
+  const handleToggleSnow = useCallback(() => {
+    setIsSnowEnabled(prev => !prev);
+  }, []);
+
+  const handleToggleRun = useCallback(() => {
+    if (simState?.finished) return;
+    if (runningRef.current) handlePause();
+    else handleStart();
+  }, [handlePause, handleStart, simState?.finished]);
+
+  const handleSpeedUp = useCallback(() => {
+    handleSpeedChange(Math.min(150, speed + 10));
+  }, [speed, handleSpeedChange]);
+
+  const handleSpeedDown = useCallback(() => {
+    handleSpeedChange(Math.max(1, speed - 10));
+  }, [speed, handleSpeedChange]);
+
+  const handleToggleAdvancedStats = useCallback(() => {
+    setShowAdvancedStats(prev => !prev);
+  }, []);
+
   const totalDays = simState?.environment?.phaseList
     ? simState.environment.phaseList.reduce((s, p) => s + p.durationDays, 0)
     : 92;
 
   const isLanding = location.pathname === '/';
   const isDocs = location.pathname === '/docs';
+  const isOnParams = location.pathname === '/parameters';
+  const isOnSim = location.pathname === '/simulation';
+  const is3D = viewMode === '3d';
+  const anyModalOpen = showSettingsModal || showResultsModal || showAdvancedStats || showResetConfirm || showColorModal || showCharacterModal || showShortcutsModal;
+  const inAppShell = !isLanding && !isDocs && !isStarting;
+
+  // ---------- Register hotkeys (TanStack Hotkeys) ----------
+  useHotkeys([
+    // Global — help modal
+    // En cualquier layout (US, ES, LatAm), '?' se produce con Shift. Usamos
+    // el formato objeto para evitar que '?' o '+' colisionen con el separador '+'
+    // del parser de strings de TanStack.
+    { hotkey: { key: '?', shift: true }, callback: () => setShowShortcutsModal(true), options: { enabled: inAppShell && !showShortcutsModal } },
+
+    // Parameters panel
+    { hotkey: 'Shift+A', callback: () => setShowSettingsModal(true), options: { enabled: inAppShell && isOnParams && !anyModalOpen } },
+    { hotkey: 'Shift+C', callback: () => setShowColorModal(true), options: { enabled: inAppShell && isOnParams && !anyModalOpen } },
+    { hotkey: 'Shift+P', callback: () => setShowCharacterModal(true), options: { enabled: inAppShell && isOnParams && !anyModalOpen && is3D } },
+    { hotkey: 'Shift+R', callback: () => handleResetDefaults(), options: { enabled: inAppShell && isOnParams && !anyModalOpen } },
+    { hotkey: 'Shift+Enter', callback: () => handleStart(), options: { enabled: inAppShell && isOnParams && !anyModalOpen } },
+
+    // View (works in both /parameters and /simulation)
+    { hotkey: 'V', callback: handleToggleView, options: { enabled: inAppShell && !anyModalOpen } },
+    { hotkey: 'T', callback: handleCycleTimeOfDay, options: { enabled: inAppShell && !anyModalOpen && is3D } },
+    { hotkey: 'N', callback: handleToggleSnow, options: { enabled: inAppShell && !anyModalOpen && is3D } },
+
+    // Simulation panel
+    { hotkey: 'Space', callback: handleToggleRun, options: { enabled: inAppShell && isOnSim && !anyModalOpen } },
+    // 9 = subir velocidad, 8 = bajar velocidad. Las teclas numéricas son las más
+    // fiables en TanStack (están en NUMBER_KEYS) y matchean también vía event.code='Digit8/9'.
+    // ignoreInputs:false → funcionan también con foco en el slider de velocidad.
+    { hotkey: '9', callback: handleSpeedUp, options: { enabled: inAppShell && isOnSim && !anyModalOpen, ignoreInputs: false } },
+    { hotkey: '8', callback: handleSpeedDown, options: { enabled: inAppShell && isOnSim && !anyModalOpen, ignoreInputs: false } },
+    { hotkey: 'E', callback: () => handleForceEnd(), options: { enabled: inAppShell && isOnSim && !anyModalOpen && !simState?.finished } },
+    { hotkey: 'S', callback: handleToggleAdvancedStats, options: { enabled: inAppShell && isOnSim && !anyModalOpen } },
+  ]);
 
   const handleEnterParams = useCallback(() => {
     if (isEnteringParams) return;
@@ -339,6 +432,27 @@ export default function App() {
               </div>
             </div>
           )}
+          <button
+            type="button"
+            onClick={() => setShowShortcutsModal(true)}
+            title="Atajos de teclado (?)"
+            aria-label="Atajos de teclado"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-secondary)',
+              padding: '0.35rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'color 0.15s, transform 0.15s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--accent-cyan)'; e.currentTarget.style.transform = 'scale(1.08)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.transform = 'scale(1)'; }}
+          >
+            <Keyboard size={18} />
+          </button>
         </div>
       </header>
 
@@ -359,7 +473,7 @@ export default function App() {
                     onOpenCharacterSelect={() => setShowCharacterModal(true)}
                   />
                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: 'calc(100vh - 120px)' }}>
-                  <SimulationView simState={simState} config={config} viewMode={viewMode} setViewMode={setViewMode} timeOfDay={timeOfDay} setTimeOfDay={setTimeOfDay} isSnowEnabled={isSnowEnabled} setIsSnowEnabled={setIsSnowEnabled} />
+                  <SimulationView simState={simState} config={config} viewMode={viewMode} setViewMode={handleSetViewMode} isSwitching={isViewSwitching} timeOfDay={timeOfDay} setTimeOfDay={setTimeOfDay} isSnowEnabled={isSnowEnabled} setIsSnowEnabled={setIsSnowEnabled} />
                 </div>
               </>
             )
@@ -369,7 +483,7 @@ export default function App() {
             isStarting ? <LoadingScreen /> : (
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: 'calc(100vh - 120px)' }}>
-                  <SimulationView simState={simState} config={config} viewMode={viewMode} setViewMode={setViewMode} timeOfDay={timeOfDay} setTimeOfDay={setTimeOfDay} isSnowEnabled={isSnowEnabled} setIsSnowEnabled={setIsSnowEnabled} />
+                  <SimulationView simState={simState} config={config} viewMode={viewMode} setViewMode={handleSetViewMode} isSwitching={isViewSwitching} timeOfDay={timeOfDay} setTimeOfDay={setTimeOfDay} isSnowEnabled={isSnowEnabled} setIsSnowEnabled={setIsSnowEnabled} />
                 </div>
 
                 <ActivePanel
@@ -450,6 +564,11 @@ export default function App() {
         config={config}
         setConfig={setConfig}
         viewMode={viewMode}
+      />
+
+      <ShortcutsHelpModal
+        isOpen={showShortcutsModal}
+        onClose={() => setShowShortcutsModal(false)}
       />
     </div>
   );

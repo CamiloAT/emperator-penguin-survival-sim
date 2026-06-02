@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
+import { useHotkey } from '@tanstack/react-hotkeys';
 import { Award, Heart, Egg, Shield, RotateCcw } from 'lucide-react';
 import ConfirmModal from './ConfirmModal.jsx';
 
 export default function ResultsModal({ isOpen, onClose, simState, onReset }) {
   const [showConfirm, setShowConfirm] = useState(false);
+
+  // Esc cierra el modal solo si no hay un ConfirmModal anidado encima.
+  useHotkey('Escape', () => onClose(), { enabled: isOpen && !showConfirm });
 
   if (!isOpen || !simState?.finished) return null;
 

@@ -1,12 +1,14 @@
 import { useState } from 'react';
+import { useHotkey } from '@tanstack/react-hotkeys';
 import { X, Save, RotateCcw, Activity, Shield, Egg, CloudSnow, Square } from 'lucide-react';
 import { DEFAULT_CONFIG } from '../App.jsx';
 
 export default function SettingsModal({ isOpen, onClose, config, onSave, onForceEnd }) {
-  if (!isOpen) return null;
-
   const [localConfig, setLocalConfig] = useState({ ...config });
   const [activeTab, setActiveTab] = useState('physiology');
+  useHotkey('Escape', () => onClose(), { enabled: isOpen });
+
+  if (!isOpen) return null;
 
   const handleChange = (key, value) => {
     setLocalConfig(prev => ({ ...prev, [key]: value }));

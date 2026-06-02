@@ -1,7 +1,10 @@
 import React from 'react';
+import { useHotkey } from '@tanstack/react-hotkeys';
 import { X } from 'lucide-react';
 
 export default function InfoModal({ isOpen, onClose, icon: Icon, iconColor, title, sections }) {
+  useHotkey('Escape', () => onClose(), { enabled: isOpen });
+
   if (!isOpen) return null;
 
   return (

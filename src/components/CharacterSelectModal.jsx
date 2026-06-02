@@ -36,7 +36,7 @@ const GLB_METADATA = {
     centerZ: 3.9418,
     originY: 50.4750,
     resetColors: true,       // Animado: resetear a blanco para evitar contaminacion del grid
-    initialRotation: Math.PI * 2, // de frente
+    initialRotation: Math.PI * 2, // 180° desde la orientacion original (de frente)
   },
   premium_animated: {
     nativeHeight: 0.39,
@@ -45,11 +45,11 @@ const GLB_METADATA = {
     centerZ: -0.2,
     originY: -0.09,
     resetColors: true,       // Animado: resetear a blanco para evitar contaminacion del grid
-    initialRotation: Math.PI * 2, // de frente
+    initialRotation: Math.PI * 2, // 180° desde la orientacion original (de frente)
   },
 };
 
-function SpinningGroup({ children, initialRotation = Math.PI, frozen = false }) {
+function SpinningGroup({ children, initialRotation = Math.PI * 2, frozen = false }) {
   const ref = useRef();
 
   useEffect(() => {
@@ -130,7 +130,10 @@ function GlbPreview({ type, path, frozen }) {
       return clips[0];
     };
 
-    const clip = findClip(gltf.animations, ['idle', 'Idle', 'stand', 'Stand', 'breath', 'Breath', 'walk', 'Walk']);
+    const clipNames = type === 'premium_animated'
+      ? ['Bray', 'bray']
+      : ['idle', 'Idle', 'stand', 'Stand', 'breath', 'Breath', 'walk', 'Walk'];
+    const clip = findClip(gltf.animations, clipNames);
     if (clip) {
       const action = mixer.clipAction(clip);
       action.play();

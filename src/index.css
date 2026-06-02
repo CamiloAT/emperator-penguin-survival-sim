@@ -1299,26 +1299,23 @@ body::before {
 
   .scroll-container {
     width: 100%;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
     position: relative;
     padding: 2rem 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     /* gradient masks for smooth fade out at edges */
     -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
     mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+  }
+
+  .scroll-container::-webkit-scrollbar {
+    display: none;
   }
 
   .scroll-track {
     display: flex;
     gap: 1.5rem;
     width: max-content;
-    animation: infiniteScroll 40s linear infinite;
-  }
-
-  .scroll-container:hover .scroll-track {
-    animation-play-state: paused;
-  }
-
-  @keyframes infiniteScroll {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); } 
   }

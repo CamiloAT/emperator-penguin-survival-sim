@@ -27,7 +27,7 @@ const GLB_METADATA = {
     centerZ: 0.00,
     originY: 2.03,
     resetColors: false,      // Modelo estático: conservar sus colores originales
-    initialRotation: Math.PI * 0.75, // Angulo en radianes — 0=espalda, PI=frente, PI/2=izquierda
+    initialRotation: Math.PI * 0.5, // Angulo en radianes — 0=espalda, PI=frente, PI/2=izquierda
   },
   low_animated: {
     nativeHeight: 100.9882,
@@ -36,7 +36,7 @@ const GLB_METADATA = {
     centerZ: 3.9418,
     originY: 50.4750,
     resetColors: true,       // Animado: resetear a blanco para evitar contaminacion del grid
-    initialRotation: Math.PI, // de frente
+    initialRotation: Math.PI * 2, // de frente
   },
   premium_animated: {
     nativeHeight: 0.39,
@@ -45,26 +45,33 @@ const GLB_METADATA = {
     centerZ: -0.2,
     originY: -0.09,
     resetColors: true,       // Animado: resetear a blanco para evitar contaminacion del grid
-    initialRotation: Math.PI, // de frente
+    initialRotation: Math.PI * 2, // de frente
   },
 };
 
-function SpinningGroup({ children, initialRotation = Math.PI }) {
+function SpinningGroup({ children, initialRotation = Math.PI, frozen = false }) {
   const ref = useRef();
 
-  // Empezamos en initialRotation para que el pinguino aparezca en el angulo correcto
   useEffect(() => {
     if (ref.current) ref.current.rotation.y = initialRotation;
   }, [initialRotation]);
 
   useFrame((_, delta) => {
-    if (ref.current) ref.current.rotation.y += delta * 0.55;
+    if (!ref.current) return;
+    if (!frozen) {
+      ref.current.rotation.y += delta * 0.55;
+    } else {
+      // Volver suavemente al ángulo frontal cuando está congelado
+      const diff = initialRotation - ref.current.rotation.y;
+      const normalized = ((diff + Math.PI) % (Math.PI * 2)) - Math.PI;
+      ref.current.rotation.y += normalized * Math.min(delta * 5, 1);
+    }
   });
 
   return <group ref={ref}>{children}</group>;
 }
 
-function ProceduralPreview() {
+function ProceduralPreview({ frozen }) {
   const geometry = useMemo(() => createPenguinGeometry(), []);
   const material = useMemo(() => new THREE.MeshStandardMaterial({
     roughness: 0.7,
@@ -73,13 +80,13 @@ function ProceduralPreview() {
   }), []);
 
   return (
-    <SpinningGroup>
+    <SpinningGroup frozen={frozen}>
       <mesh geometry={geometry} material={material} castShadow receiveShadow position={[0, -0.19, 0]} />
     </SpinningGroup>
   );
 }
 
-function GlbPreview({ type, path }) {
+function GlbPreview({ type, path, frozen }) {
   const gltf = useGLTF(path);
   const mixerRef = useRef(null);
 
@@ -149,7 +156,7 @@ function GlbPreview({ type, path }) {
   const yOffset = meta.originY !== undefined ? meta.originY : meta.centerY;
 
   return (
-    <SpinningGroup initialRotation={meta.initialRotation ?? Math.PI}>
+    <SpinningGroup initialRotation={meta.initialRotation ?? Math.PI} frozen={frozen}>
       <group scale={[s, s, s]}>
         <primitive
           object={previewClone}
@@ -160,7 +167,7 @@ function GlbPreview({ type, path }) {
   );
 }
 
-function CharacterPreview({ type, assetAvailable, path }) {
+function CharacterPreview({ type, assetAvailable, path, frozen }) {
   return (
     <Canvas
       camera={{ position: [0, 1, 2.0], fov: 40 }}
@@ -173,8 +180,8 @@ function CharacterPreview({ type, assetAvailable, path }) {
       <directionalLight position={[3, 4, 4]} intensity={1.35} castShadow />
       <Environment preset="city" />
       <Suspense fallback={null}>
-        {type === 'procedural' && <ProceduralPreview />}
-        {type !== 'procedural' && assetAvailable && path && <GlbPreview type={type} path={path} />}
+        {type === 'procedural' && <ProceduralPreview frozen={frozen} />}
+        {type !== 'procedural' && assetAvailable && path && <GlbPreview type={type} path={path} frozen={frozen} />}
       </Suspense>
       <ContactShadows position={[0, -2.2, 0]} opacity={0.45} scale={7} blur={2} far={5} />
       <OrbitControls enableZoom={false} enablePan={false} minPolarAngle={0.75} maxPolarAngle={1.65} />
@@ -244,6 +251,7 @@ export default function CharacterSelectModal({ isOpen, onClose, config, setConfi
     const idx = OPTIONS.findIndex(o => o.id === (config?.penguinModel || 'procedural'));
     return idx >= 0 ? idx : 0;
   });
+  const [frozen, setFrozen] = useState(false);
   const selected = config?.penguinModel || 'procedural';
 
   const current = OPTIONS[currentIndex];
@@ -344,18 +352,46 @@ export default function CharacterSelectModal({ isOpen, onClose, config, setConfi
             <ChevronLeft size={22} />
           </button>
 
-          <div className="character-carousel__preview">
+          <div className="character-carousel__preview" style={{ position: 'relative' }}>
             <PreviewErrorBoundary
               resetKey={`${current.id}-${assetAvailable}`}
               fallback={<div className="character-card__missing">Modelo incompleto</div>}
             >
-              <CharacterPreview type={current.id} assetAvailable={assetAvailable} path={current.glbPath} />
+              <CharacterPreview type={current.id} assetAvailable={assetAvailable} path={current.glbPath} frozen={frozen} />
             </PreviewErrorBoundary>
             {disabled && (
               <div className="character-card__missing">
                 {checkingAsset ? 'Buscando modelo...' : 'Falta el archivo .glb'}
               </div>
             )}
+            {/* Botón de congelar rotación */}
+            <button
+              type="button"
+              onClick={() => setFrozen(f => !f)}
+              title={frozen ? 'Reanudar rotación' : 'Ver de frente (pausar rotación)'}
+              style={{
+                position: 'absolute',
+                bottom: '10px',
+                right: '10px',
+                background: frozen ? 'var(--accent-cyan)' : 'rgba(10, 15, 30, 0.72)',
+                border: `1.5px solid ${frozen ? 'var(--accent-cyan)' : 'rgba(180, 210, 255, 0.55)'}`,
+                borderRadius: '8px',
+                color: frozen ? '#000' : '#d0e8ff',
+                padding: '5px 10px',
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                backdropFilter: 'blur(8px)',
+                transition: 'all 0.2s ease',
+                letterSpacing: '0.03em',
+                textShadow: frozen ? 'none' : '0 0 6px rgba(120,180,255,0.5)',
+              }}
+            >
+              {frozen ? '▶ Girar' : '⏸ De frente'}
+            </button>
           </div>
 
           <button

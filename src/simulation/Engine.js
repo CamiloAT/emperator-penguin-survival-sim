@@ -163,6 +163,28 @@ export class SimulationEngine {
     return this.getState();
   }
 
+  /** Build a context-aware end-of-simulation message based on survival state */
+  _buildEndMessage() {
+    let aliveCount = 0;
+    let viableEggs = 0;
+    for (let i = 0; i < this.penguins.length; i++) {
+      const p = this.penguins[i];
+      if (p.isAlive) aliveCount++;
+      if (p.hasEgg && p.egg && p.egg.state === EGG_STATE.STABLE) viableEggs++;
+    }
+
+    if (aliveCount === 0) {
+      return 'La simulación ha finalizado. La colonia entera pereció ante las duras condiciones del invierno antártico: ningún pingüino sobrevivió para ver la primavera.';
+    }
+    if (viableEggs === 0) {
+      return 'La simulación ha finalizado. Aunque algunos pingüinos lograron sobrevivir, la tasa de pérdida y congelación de huevos fue total: ningún embrión llegará a eclosionar.';
+    }
+    if (viableEggs < this.colonySize * 0.25) {
+      return 'La simulación ha finalizado. La colonia sobrevivió, pero la mayoría de los huevos se perdieron o congelaron. Solo unos pocos polluelos están por eclosionar.';
+    }
+    return 'La simulación ha finalizado. Los polluelos están por eclosionar.';
+  }
+
   /** Run one tick of the simulation */
   tick() {
     if (this.finished) return this.getState();
@@ -175,7 +197,7 @@ export class SimulationEngine {
       if (this.step >= this.totalSteps) {
         this.finished = true;
         this.running = false;
-        this.addEvent('simulation_end', 'La simulación ha finalizado. Los polluelos están por eclosionar.');
+        this.addEvent('simulation_end', this._buildEndMessage());
         break;
       }
 

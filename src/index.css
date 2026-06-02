@@ -399,7 +399,7 @@ body::before {
   background: linear-gradient(to right, rgba(76, 201, 240, 0.5), rgba(76, 201, 240, 1));
   box-shadow: 0 0 12px rgba(76, 201, 240, 0.7);
   border-radius: 99px;
-  animation: progressFill 4s ease-in-out forwards;
+  animation: progressFill 3.4s ease-in-out forwards;
 }
 @keyframes progressFill {
   from { width: 0%; }

@@ -273,7 +273,7 @@ export default function App() {
     setTimeout(() => {
       setIsEnteringParams(false);
       navigate('/parameters');
-    }, 4000);
+    }, 3400);
   }, [isEnteringParams, navigate]);
 
   if (isLanding) {

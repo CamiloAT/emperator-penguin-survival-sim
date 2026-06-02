@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, ArrowRight, ShieldAlert, ShieldCheck, ThermometerSnowflake, Wind, Egg, Users, Flame, Snowflake, RefreshCw, HelpCircle, Info, Calendar, Skull } from 'lucide-react';
+import { Activity, ArrowRight, ShieldAlert, ShieldCheck, ThermometerSnowflake, Wind, Egg, Users, Flame, Snowflake, RefreshCw, HelpCircle, Info, Calendar, Skull, BookOpen } from 'lucide-react';
 import { PenguinLogo } from '../App.jsx';
 import InfoModal from './InfoModal.jsx';
 
@@ -70,6 +70,27 @@ export default function LandingPage({ onEnterParams }) {
           <PenguinLogo size={32} />
           <span style={{ fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>Emperator Penguin Survival Sim</span>
         </div>
+        <button
+          onClick={() => navigate('/docs')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            background: 'none',
+            border: 'none',
+            padding: '0.5rem 0.25rem',
+            color: 'var(--text-secondary)',
+            fontFamily: 'var(--font-sans)',
+            fontSize: '0.95rem',
+            fontWeight: 500,
+            cursor: 'pointer',
+            transition: 'color 0.2s ease'
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-orange)'}
+          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+        >
+          <BookOpen size={16} /> Documentación
+        </button>
       </header>
 
       <main className="landing-main">
@@ -85,7 +106,33 @@ export default function LandingPage({ onEnterParams }) {
             Descubre cómo los pingüinos emperador se agrupan en grupo (el famoso "huddle") para sobrevivir el invierno antártico. Esta simulación interactiva te permite ver qué pasa con la colonia cuando cambia la temperatura, el viento o el tamaño del grupo.
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-            <button className="btn btn--primary" style={{ padding: '0.9rem 2rem', fontSize: '1.1rem', borderRadius: '99px' }} onClick={goToParams}>
+            <button
+              className="btn btn--primary"
+              onClick={goToParams}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'linear-gradient(135deg, #ffb347, var(--accent-red))';
+                e.currentTarget.style.boxShadow = '0 6px 24px rgba(248, 150, 30, 0.5)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'linear-gradient(135deg, var(--accent-orange), var(--accent-red))';
+                e.currentTarget.style.boxShadow = '0 4px 18px rgba(248, 150, 30, 0.35)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+              style={{
+                padding: '0.9rem 2rem',
+                fontSize: '1.1rem',
+                borderRadius: '99px',
+                background: 'linear-gradient(135deg, var(--accent-orange), var(--accent-red))',
+                boxShadow: '0 4px 18px rgba(248, 150, 30, 0.35)',
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'background 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease',
+                display: 'inline-flex',
+                alignItems: 'center'
+              }}
+            >
               Probar la Simulación <ArrowRight size={18} style={{ marginLeft: '8px' }} />
             </button>
           </div>

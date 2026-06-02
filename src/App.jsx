@@ -11,6 +11,7 @@ import ConfirmModal from './components/ConfirmModal.jsx';
 import ColorSettingsModal from './components/ColorSettingsModal.jsx';
 import CharacterSelectModal from './components/CharacterSelectModal.jsx';
 import LandingPage from './components/LandingPage.jsx';
+import DocsPage from './components/DocsPage.jsx';
 import { SimulationEngine } from './simulation/Engine.js';
 
 // Premium Penguin Logo component
@@ -139,7 +140,7 @@ export default function App() {
   // Initialize on mount
   useEffect(() => {
     initEngine();
-    if (location.pathname !== '/' && location.pathname !== '/parameters' && location.pathname !== '/simulation') {
+    if (location.pathname !== '/' && location.pathname !== '/parameters' && location.pathname !== '/simulation' && location.pathname !== '/docs') {
       navigate('/', { replace: true });
     }
   }, []);
@@ -267,6 +268,7 @@ export default function App() {
     : 92;
 
   const isLanding = location.pathname === '/';
+  const isDocs = location.pathname === '/docs';
 
   const handleEnterParams = useCallback(() => {
     if (isEnteringParams) return;
@@ -278,11 +280,12 @@ export default function App() {
     }, 3400);
   }, [isEnteringParams, navigate]);
 
-  if (isLanding) {
+  if (isLanding || isDocs) {
     return (
       <>
         <Routes>
           <Route path="/" element={<LandingPage onEnterParams={handleEnterParams} />} />
+          <Route path="/docs" element={<DocsPage />} />
         </Routes>
         {isEnteringParams && (
           <div style={{

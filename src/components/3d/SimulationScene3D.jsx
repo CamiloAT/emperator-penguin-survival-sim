@@ -76,24 +76,39 @@ function SceneContent({ simState, config, isNightMode }) {
       {/* Lunar or Solar body */}
       <group position={isNightMode ? [-30, 4, -40] : [-40, 6, 40]}>
         {isNightMode ? (
-          /* Crescent Moon */
-          <mesh rotation={[0, 0, Math.PI / 4]}>
-            {/* Base moon sphere (dark, slightly visible) */}
+          /* Crescent Moon - layered spheres with soft halo */
+          <group rotation={[0, 0, -0.25]}>
+            {/* Soft outer halo */}
             <mesh>
-              <sphereGeometry args={[2.5, 32, 32]} />
-              <meshBasicMaterial color="#0a1525" />
+              <sphereGeometry args={[3.6, 32, 32]} />
+              <meshBasicMaterial color="#6a7eb0" transparent opacity={0.05} />
             </mesh>
-            {/* The bright crescent part constructed via a torus/tube trick or just using a second overlapped sphere for a boolean-like cut. Here we do an overlapped dark sphere to "cut" the light one */}
+            {/* Mid halo */}
             <mesh>
-              <sphereGeometry args={[2.51, 32, 32]} />
-              <meshBasicMaterial color="#e0e8ff" transparent opacity={0.9} />
+              <sphereGeometry args={[3.1, 32, 32]} />
+              <meshBasicMaterial color="#8a9ec8" transparent opacity={0.09} />
             </mesh>
-            <mesh position={[0.6, 0.4, 0]}>
-              <sphereGeometry args={[2.55, 32, 32]} />
-              {/* This sphere matches the background color to create the crescent illusion */}
+            {/* Inner glow */}
+            <mesh>
+              <sphereGeometry args={[2.75, 32, 32]} />
+              <meshBasicMaterial color="#b8c8e8" transparent opacity={0.14} />
+            </mesh>
+            {/* Dark side of moon (full sphere, dim) */}
+            <mesh>
+              <sphereGeometry args={[2.5, 48, 48]} />
+              <meshBasicMaterial color="#1a2535" />
+            </mesh>
+            {/* Bright side of moon (slightly larger, will be partially cut) */}
+            <mesh>
+              <sphereGeometry args={[2.52, 48, 48]} />
+              <meshBasicMaterial color="#f0f4ff" />
+            </mesh>
+            {/* Cutting sphere - matches sky color, offset to create the thin crescent */}
+            <mesh position={[1.15, 0.55, 0.1]}>
+              <sphereGeometry args={[2.75, 48, 48]} />
               <meshBasicMaterial color="#050814" />
             </mesh>
-          </mesh>
+          </group>
         ) : (
           /* Sun */
           <mesh>

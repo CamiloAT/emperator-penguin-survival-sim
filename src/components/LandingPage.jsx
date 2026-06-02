@@ -23,8 +23,15 @@ function LoopCard({ type, title, desc }) {
   );
 }
 
-export default function LandingPage() {
+export default function LandingPage({ onEnterParams }) {
   const navigate = useNavigate();
+  const goToParams = () => {
+    if (onEnterParams) {
+      onEnterParams();
+    } else {
+      navigate('/parameters');
+    }
+  };
 
   return (
     <div className="landing-shell">
@@ -48,7 +55,7 @@ export default function LandingPage() {
             Evaluación termo-dinámica interactiva. Un modelo computacional basado en agentes para analizar cómo los gradientes de temperatura y los vientos huracanados condicionan la vida del pingüino emperador.
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-            <button className="btn btn--primary" style={{ padding: '0.9rem 2rem', fontSize: '1.1rem', borderRadius: '99px' }} onClick={() => navigate('/parameters')}>
+            <button className="btn btn--primary" style={{ padding: '0.9rem 2rem', fontSize: '1.1rem', borderRadius: '99px' }} onClick={goToParams}>
               Explorar Modelo <ArrowRight size={18} style={{ marginLeft: '8px' }} />
             </button>
           </div>
@@ -220,7 +227,7 @@ export default function LandingPage() {
           <p style={{ color: 'var(--text-secondary)', marginBottom: '2.5rem', maxWidth: '650px', margin: '0 auto 2.5rem', fontSize: '1.15rem', lineHeight: 1.6 }}>
             Accede al laboratorio paramétrico y ajusta personalmente el tamaño poblacional, temperaturas perimetrales y los límites de la biología pingüino para descubrir el punto límite de quiebre.
           </p>
-          <button className="btn btn--primary" style={{ padding: '1rem 2.5rem', fontSize: '1.15rem', borderRadius: '99px', boxShadow: '0 10px 40px rgba(248, 150, 30, 0.3)' }} onClick={() => navigate('/parameters')}>
+          <button className="btn btn--primary" style={{ padding: '1rem 2.5rem', fontSize: '1.15rem', borderRadius: '99px', boxShadow: '0 10px 40px rgba(248, 150, 30, 0.3)' }} onClick={goToParams}>
             Comenzar Análisis Dimensional →
           </button>
         </section>

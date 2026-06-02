@@ -115,6 +115,7 @@ export default function App() {
   const [showCharacterModal, setShowCharacterModal] = useState(false);
   const [viewMode, setViewMode] = useState('3d');
   const [isNightMode, setIsNightMode] = useState(false);
+  const [isEnteringParams, setIsEnteringParams] = useState(false);
   const engineRef = useRef(null);
   const animRef = useRef(null);
   const runningRef = useRef(false);
@@ -266,11 +267,44 @@ export default function App() {
 
   const isLanding = location.pathname === '/';
 
+  const handleEnterParams = useCallback(() => {
+    if (isEnteringParams) return;
+    setIsEnteringParams(true);
+    setTimeout(() => {
+      setIsEnteringParams(false);
+      navigate('/parameters');
+    }, 4000);
+  }, [isEnteringParams, navigate]);
+
   if (isLanding) {
     return (
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-      </Routes>
+      <>
+        <Routes>
+          <Route path="/" element={<LandingPage onEnterParams={handleEnterParams} />} />
+        </Routes>
+        {isEnteringParams && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(5, 8, 20, 0.88)',
+            backdropFilter: 'blur(14px)',
+            WebkitBackdropFilter: 'blur(14px)',
+            animation: 'fadeInOverlay 0.4s ease-out',
+          }}>
+            <div style={{ width: 'min(90vw, 560px)' }}>
+              <LoadingScreen
+                title="Ingresando al Laboratorio"
+                subtitle="PREPARANDO PANEL DE PARÁMETROS..."
+                variant="landing"
+              />
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 

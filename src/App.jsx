@@ -269,6 +269,7 @@ export default function App() {
 
   const handleEnterParams = useCallback(() => {
     if (isEnteringParams) return;
+    setViewMode('2d');
     setIsEnteringParams(true);
     setTimeout(() => {
       setIsEnteringParams(false);

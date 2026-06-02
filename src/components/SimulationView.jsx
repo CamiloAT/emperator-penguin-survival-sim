@@ -5,12 +5,17 @@
  */
 import { useState, lazy, Suspense, useEffect } from 'react';
 import SimulationCanvas from './SimulationCanvas.jsx';
-import { Box, Layers, Sun, Moon } from 'lucide-react';
+import { Box, Layers, Sun, Sunset, Moon, Snowflake } from 'lucide-react';
 
 // Lazy-load the 3D scene to avoid loading Three.js if user stays in 2D
 const SimulationScene3D = lazy(() => import('./3d/SimulationScene3D.jsx'));
 
-export default function SimulationView({ simState, config, viewMode, setViewMode, isNightMode, setIsNightMode }) {
+const TIME_CYCLE = ['day', 'sunset', 'night'];
+const TIME_ICONS = { day: Sun, sunset: Sunset, night: Moon };
+const TIME_LABELS = { day: 'Día', sunset: 'Atardecer', night: 'Noche' };
+const TIME_NEXT = { day: 'Atardecer', sunset: 'Noche', night: 'Día' };
+
+export default function SimulationView({ simState, config, viewMode, setViewMode, timeOfDay, setTimeOfDay, isSnowEnabled, setIsSnowEnabled }) {
   const [isSwitching, setIsSwitching] = useState(false);
 
   const handleToggle = (mode) => {
@@ -21,6 +26,15 @@ export default function SimulationView({ simState, config, viewMode, setViewMode
       setIsSwitching(false);
     }, 2000);
   };
+
+  const cycleTimeOfDay = () => {
+    const idx = TIME_CYCLE.indexOf(timeOfDay);
+    const next = TIME_CYCLE[(idx + 1) % TIME_CYCLE.length];
+    setTimeOfDay(next);
+  };
+
+  const TimeIcon = TIME_ICONS[timeOfDay] || Sun;
+  const timeColor = { day: '#ffcc33', sunset: '#ff7733', night: '#8aa2d6' }[timeOfDay];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
@@ -45,17 +59,27 @@ export default function SimulationView({ simState, config, viewMode, setViewMode
           <span>3D</span>
         </button>
 
-        {/* Day/Night Toggle only visible when in 3D */}
+        {/* Time of day + snow controls visible only in 3D */}
         {viewMode === '3d' && (
           <>
             <div style={{ width: '1px', background: 'var(--border-subtle)', margin: '0 4px' }} />
             <button
-              className="view-toggle__btn"
-              onClick={() => setIsNightMode(!isNightMode)}
-              title={isNightMode ? "Cambiar a Día" : "Cambiar a Noche"}
+              className="view-toggle__btn view-toggle__btn--icon"
+              onClick={cycleTimeOfDay}
+              title={`Cambiar a ${TIME_NEXT[timeOfDay]} (actual: ${TIME_LABELS[timeOfDay]})`}
               disabled={isSwitching}
+              style={{ color: timeColor }}
             >
-              {isNightMode ? <Sun size={14} /> : <Moon size={14} />}
+              <TimeIcon size={14} />
+            </button>
+            <button
+              className="view-toggle__btn view-toggle__btn--icon"
+              onClick={() => setIsSnowEnabled(!isSnowEnabled)}
+              title={isSnowEnabled ? 'Desactivar nieve' : 'Activar nieve'}
+              disabled={isSwitching}
+              style={{ opacity: isSnowEnabled ? 1 : 0.5 }}
+            >
+              <Snowflake size={14} />
             </button>
           </>
         )}
@@ -96,7 +120,7 @@ export default function SimulationView({ simState, config, viewMode, setViewMode
                 <span>Cargando escena 3D...</span>
               </div>
             }>
-              <SimulationScene3D simState={simState} config={config} isNightMode={isNightMode} />
+              <SimulationScene3D simState={simState} config={config} timeOfDay={timeOfDay} isSnowEnabled={isSnowEnabled} />
             </Suspense>
 
             {/* HUD overlay (same info badges as 2D) */}

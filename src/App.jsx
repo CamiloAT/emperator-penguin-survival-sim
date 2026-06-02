@@ -114,7 +114,8 @@ export default function App() {
   const [showColorModal, setShowColorModal] = useState(false);
   const [showCharacterModal, setShowCharacterModal] = useState(false);
   const [viewMode, setViewMode] = useState('3d');
-  const [isNightMode, setIsNightMode] = useState(false);
+  const [timeOfDay, setTimeOfDay] = useState('day');
+  const [isSnowEnabled, setIsSnowEnabled] = useState(true);
   const [isEnteringParams, setIsEnteringParams] = useState(false);
   const engineRef = useRef(null);
   const animRef = useRef(null);
@@ -355,17 +356,17 @@ export default function App() {
                     onOpenCharacterSelect={() => setShowCharacterModal(true)}
                   />
                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: 'calc(100vh - 120px)' }}>
-                  <SimulationView simState={simState} config={config} viewMode={viewMode} setViewMode={setViewMode} isNightMode={isNightMode} setIsNightMode={setIsNightMode} />
+                  <SimulationView simState={simState} config={config} viewMode={viewMode} setViewMode={setViewMode} timeOfDay={timeOfDay} setTimeOfDay={setTimeOfDay} isSnowEnabled={isSnowEnabled} setIsSnowEnabled={setIsSnowEnabled} />
                 </div>
               </>
             )
           } />
-          
+
           <Route path="/simulation" element={
             isStarting ? <LoadingScreen /> : (
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: 'calc(100vh - 120px)' }}>
-                  <SimulationView simState={simState} config={config} viewMode={viewMode} setViewMode={setViewMode} isNightMode={isNightMode} setIsNightMode={setIsNightMode} />
+                  <SimulationView simState={simState} config={config} viewMode={viewMode} setViewMode={setViewMode} timeOfDay={timeOfDay} setTimeOfDay={setTimeOfDay} isSnowEnabled={isSnowEnabled} setIsSnowEnabled={setIsSnowEnabled} />
                 </div>
 
                 <ActivePanel

@@ -55,6 +55,17 @@ export default function SimulationView({ simState, config, viewMode, setViewMode
     setIsAmbientSoundOn(prev => !prev);
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'm' || e.key === 'M') {
+        toggleAmbientSound();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleAmbientSound]);
+
   const handleToggle = (mode) => {
     if (mode === viewMode || isSwitching) return;
     setViewMode(mode);

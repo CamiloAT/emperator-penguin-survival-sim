@@ -1,6 +1,6 @@
 import React from 'react';
 import { useHotkey } from '@tanstack/react-hotkeys';
-import { X, Keyboard, Settings, Palette, UserRound, RefreshCw, Play, Layers, Sun, Snowflake, Pause, FastForward, Square, BarChart2, HelpCircle } from 'lucide-react';
+import { X, Keyboard, Settings, Palette, UserRound, RefreshCw, Play, Layers, Sun, Snowflake, Volume2, Pause, FastForward, Square, BarChart2, HelpCircle } from 'lucide-react';
 
 function Kbd({ children }) {
   return (
@@ -158,6 +158,7 @@ export default function ShortcutsHelpModal({ isOpen, onClose }) {
             <Row icon={Layers} keys={['V']} label="Alternar 2D / 3D" hint="Cambia entre el canvas 2D y la escena 3D" />
             <Row icon={Sun} keys={['T']} label="Ciclar Día → Atardecer → Noche" hint="Solo en vista 3D" />
             <Row icon={Snowflake} keys={['N']} label="Activar / Desactivar Nieve" hint="Solo en vista 3D" />
+            <Row icon={Volume2} keys={['M']} label="Activar / Desactivar Sonido Ambiente" hint="Solo en vista 3D" />
           </Section>
 
           <Section title="Panel de Simulación" color="var(--accent-green)">
@@ -184,7 +185,7 @@ export default function ShortcutsHelpModal({ isOpen, onClose }) {
             lineHeight: 1.5,
           }}>
             <strong style={{ color: 'var(--accent-yellow, #ffcc33)' }}>Tip:</strong>{' '}
-            Los atajos de tecla simple (<Kbd>V</Kbd> <Kbd>T</Kbd> <Kbd>N</Kbd> <Kbd>S</Kbd> <Kbd>E</Kbd> <Kbd>8</Kbd> <Kbd>9</Kbd>)
+            Los atajos de tecla simple (<Kbd>V</Kbd> <Kbd>T</Kbd> <Kbd>N</Kbd> <Kbd>M</Kbd> <Kbd>S</Kbd> <Kbd>E</Kbd> <Kbd>8</Kbd> <Kbd>9</Kbd>)
             se ignoran mientras estás escribiendo en un campo de texto, para no interferir.
             Los que usan <Kbd>Shift</Kbd> funcionan en cualquier contexto.
           </div>

@@ -7,9 +7,9 @@
  * desde App.jsx, para que la animación del huevo se dispare igual desde el
  * botón aquí como desde el shortcut 'V'.
  */
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState, useRef, useEffect } from 'react';
 import SimulationCanvas from './SimulationCanvas.jsx';
-import { Box, Layers, Sun, Sunset, Moon, Snowflake } from 'lucide-react';
+import { Box, Layers, Sun, Sunset, Moon, Snowflake, Volume2, VolumeX } from 'lucide-react';
 
 // Lazy-load the 3D scene to avoid loading Three.js if user stays in 2D
 const SimulationScene3D = lazy(() => import('./3d/SimulationScene3D.jsx'));
@@ -20,9 +20,43 @@ const TIME_LABELS = { day: 'Día', sunset: 'Atardecer', night: 'Noche' };
 const TIME_NEXT = { day: 'Atardecer', sunset: 'Noche', night: 'Día' };
 
 export default function SimulationView({ simState, config, viewMode, setViewMode, isSwitching = false, timeOfDay, setTimeOfDay, isSnowEnabled, setIsSnowEnabled }) {
+  const [isAmbientSoundOn, setIsAmbientSoundOn] = useState(false);
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    audioRef.current = new Audio('/environment-sound.mp3');
+    audioRef.current.loop = true;
+    audioRef.current.volume = 0.3;
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (viewMode === '2d' && audioRef.current) {
+      audioRef.current.pause();
+      setIsAmbientSoundOn(false);
+    }
+  }, [viewMode]);
+
+  const toggleAmbientSound = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isAmbientSoundOn) {
+      audio.pause();
+    } else {
+      audio.play().catch(() => {});
+    }
+    setIsAmbientSoundOn(prev => !prev);
+  };
+
   const handleToggle = (mode) => {
     if (mode === viewMode || isSwitching) return;
-    // Delegamos al padre: él maneja isSwitching + setViewMode con timer.
     setViewMode(mode);
   };
 
@@ -79,6 +113,15 @@ export default function SimulationView({ simState, config, viewMode, setViewMode
               style={{ opacity: isSnowEnabled ? 1 : 0.5 }}
             >
               <Snowflake size={14} />
+            </button>
+            <button
+              className="view-toggle__btn view-toggle__btn--icon"
+              onClick={toggleAmbientSound}
+              title={isAmbientSoundOn ? 'Desactivar sonido ambiente' : 'Activar sonido ambiente'}
+              disabled={isSwitching}
+              style={{ opacity: isAmbientSoundOn ? 1 : 0.5 }}
+            >
+              {isAmbientSoundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
             </button>
           </>
         )}

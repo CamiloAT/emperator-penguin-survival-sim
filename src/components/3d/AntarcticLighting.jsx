@@ -12,7 +12,7 @@ import * as THREE from 'three';
 
 const SUN_POSITIONS = {
   day:     { main: [-40, 28, 50], fill: [10, 8, -8], mainColor: '#fff1c0', fillColor: '#b0c8e8', ambient: '#c8d8f0', hemiSky: '#8ab4e0', hemiGround: '#d8e4f0' },
-  sunset:  { main: [50, 4, -30],  fill: [-15, 6, 8], mainColor: '#ff7733', fillColor: '#ff9966', ambient: '#ffb088', hemiSky: '#ff7a3d', hemiGround: '#5a2410' },
+  sunset:  { main: [-50, 4, 30],  fill: [15, 6, -8], mainColor: '#ff7733', fillColor: '#ff9966', ambient: '#ffb088', hemiSky: '#ff7a3d', hemiGround: '#5a2410' },
   night:   { main: [-30, 14, -40], fill: [10, 6, -8], mainColor: '#8aa2d6', fillColor: '#1a2a40', ambient: '#1a2a40', hemiSky: '#050814', hemiGround: '#112233' },
 };
 
@@ -84,6 +84,11 @@ export default function AntarcticLighting({ temperature = -30, windSpeed = 50, t
   const colors = SUN_POSITIONS[timeOfDay] || SUN_POSITIONS.day;
   const pos = colors.main;
 
+  // When the sun is low (sunset), shadows stretch much longer → expand frustum
+  const sunElevation = Math.max(0.1, pos[1]); // Y component = elevation
+  const sunDistance = Math.sqrt(pos[0] ** 2 + pos[1] ** 2 + pos[2] ** 2);
+  const frustumScale = Math.min(3, Math.max(1, sunDistance / sunElevation));
+
   return (
     <>
       {/* Main directional light (sun / moon) */}
@@ -94,11 +99,11 @@ export default function AntarcticLighting({ temperature = -30, windSpeed = 50, t
         castShadow={timeOfDay !== 'night'}
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
-        shadow-camera-far={80}
-        shadow-camera-left={-30}
-        shadow-camera-right={30}
-        shadow-camera-top={30}
-        shadow-camera-bottom={-30}
+        shadow-camera-far={80 * frustumScale}
+        shadow-camera-left={-30 * frustumScale}
+        shadow-camera-right={30 * frustumScale}
+        shadow-camera-top={30 * frustumScale}
+        shadow-camera-bottom={-30 * frustumScale}
         shadow-bias={-0.0005}
       />
 

@@ -10,7 +10,7 @@
  */
 import { Suspense, useMemo, useEffect, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, ContactShadows } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import { Sky } from 'three-stdlib';
 import * as THREE from 'three';
 
@@ -26,7 +26,7 @@ import AntarcticLighting from './AntarcticLighting.jsx';
 // bodyElevation/bodyAzimuth = where the visible sun/moon disc is rendered (always above horizon).
 const TIME_OF_DAY_PARAMS = {
   day:     { skyElevation: 28,  bodyElevation: 30,  bodyAzimuth: 130, turbidity: 4,  rayleigh: 2,   mieCoeff: 0.005, mieDir: 0.80, bgColor: '#8ab4e0' },
-  sunset:  { skyElevation: 0.5, bodyElevation: 1.5, bodyAzimuth: 245, turbidity: 14, rayleigh: 4,   mieCoeff: 0.012, mieDir: 0.97, bgColor: '#ff4a18' },
+  sunset:  { skyElevation: 0.5, bodyElevation: 1.5, bodyAzimuth: 300, turbidity: 14, rayleigh: 4,   mieCoeff: 0.012, mieDir: 0.97, bgColor: '#ff4a18' },
   night:   { skyElevation: -25, bodyElevation: 7,   bodyAzimuth: 200, turbidity: 20, rayleigh: 0.1, mieCoeff: 0.001, mieDir: 0.50, bgColor: '#020410' },
 };
 
@@ -547,16 +547,6 @@ function SceneContent({ simState, config, timeOfDay, isSnowEnabled }) {
         gridSize={gridSize}
         windAngle={windAngle}
         windSpeed={windSpeed}
-      />
-
-      {/* Contact shadows under the colony */}
-      <ContactShadows
-        position={[0, -0.35, 0]}
-        opacity={0.35}
-        scale={50}
-        blur={2}
-        far={4}
-        color={timeOfDay === 'sunset' ? '#3a1a10' : '#1a2a40'}
       />
 
       {/* Penguin colony (instanced) */}

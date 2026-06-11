@@ -65,7 +65,7 @@ export default function LandingPage({ onEnterParams }) {
 
   return (
     <div className="landing-shell">
-      <header className="landing-header">
+      <header className="landing-header l-anim-fade-in" style={{ animationDelay: '0s' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }} onClick={() => navigate('/')}>
           <PenguinLogo size={32} />
           <span style={{ fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>Emperator Penguin Survival Sim</span>
@@ -96,16 +96,16 @@ export default function LandingPage({ onEnterParams }) {
       <main className="landing-main">
         {/* HERO */}
         <section style={{ textAlign: 'center', maxWidth: '800px', margin: '3rem auto 0' }}>
-          <div className="badge-landing" style={{ marginBottom: '2rem' }}>
+          <div className="badge-landing l-anim-pop" style={{ marginBottom: '2rem', animationDelay: '0.1s' }}>
             <Activity size={14} style={{ marginRight: '8px' }} /> Proyecto de simulación regional Antártica
           </div>
-          <h1 style={{ fontSize: '3.5rem', fontWeight: 800, lineHeight: 1.15, marginBottom: '2rem', color: 'var(--text-primary)' }}>
+          <h1 className="l-anim-fade-up" style={{ fontSize: '3.5rem', fontWeight: 800, lineHeight: 1.15, marginBottom: '2rem', color: 'var(--text-primary)', animationDelay: '0.25s' }}>
             Simulación del Agrupamiento de <span style={{ background: 'linear-gradient(to right, var(--accent-orange), var(--accent-red))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Pingüinos Emperador</span>
           </h1>
-          <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', marginBottom: '3rem', lineHeight: 1.6, maxWidth: '700px', margin: '0 auto 3rem' }}>
+          <p className="l-anim-fade-up" style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', marginBottom: '3rem', lineHeight: 1.6, maxWidth: '700px', margin: '0 auto 3rem', animationDelay: '0.4s' }}>
             Descubre cómo los pingüinos emperador se agrupan en grupo (el famoso "huddle") para sobrevivir el invierno antártico. Esta simulación interactiva te permite ver qué pasa con la colonia cuando cambia la temperatura, el viento o el tamaño del grupo.
           </p>
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+          <div className="l-anim-fade-up" style={{ display: 'flex', gap: '1rem', justifyContent: 'center', animationDelay: '0.55s' }}>
             <button
               className="btn btn--primary"
               onClick={goToParams}
@@ -141,11 +141,12 @@ export default function LandingPage({ onEnterParams }) {
         {/* HIGHLIGHT STATS */}
         <section className="bento-grid-3 text-center" style={{ gap: '2rem', padding: '0 2rem', marginTop: '5rem', marginBottom: '6rem' }}>
           <div
+            className="l-anim-pop"
             onClick={() => setActiveModal('penguins')}
             role="button"
             tabIndex={0}
             onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && setActiveModal('penguins')}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', padding: '1rem', borderRadius: 'var(--radius-lg)', border: '1px solid transparent', transition: 'all 0.2s ease' }}
+            style={{ animationDelay: '0.3s', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', padding: '1rem', borderRadius: 'var(--radius-lg)', border: '1px solid transparent', transition: 'all 0.2s ease' }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.background = 'rgba(248, 150, 30, 0.04)'; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.background = 'transparent'; }}
           >
@@ -157,11 +158,12 @@ export default function LandingPage({ onEnterParams }) {
             <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '0.4rem' }}>Clic para más detalle</div>
           </div>
           <div
+            className="l-anim-pop"
             onClick={() => setActiveModal('days')}
             role="button"
             tabIndex={0}
             onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && setActiveModal('days')}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', padding: '1rem', borderRadius: 'var(--radius-lg)', border: '1px solid transparent', transition: 'all 0.2s ease' }}
+            style={{ animationDelay: '0.45s', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', padding: '1rem', borderRadius: 'var(--radius-lg)', border: '1px solid transparent', transition: 'all 0.2s ease' }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.background = 'rgba(76, 201, 240, 0.04)'; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.background = 'transparent'; }}
           >
@@ -173,11 +175,12 @@ export default function LandingPage({ onEnterParams }) {
             <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '0.4rem' }}>Clic para más detalle</div>
           </div>
           <div
+            className="l-anim-pop"
             onClick={() => setActiveModal('temp')}
             role="button"
             tabIndex={0}
             onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && setActiveModal('temp')}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', padding: '1rem', borderRadius: 'var(--radius-lg)', border: '1px solid transparent', transition: 'all 0.2s ease' }}
+            style={{ animationDelay: '0.6s', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', padding: '1rem', borderRadius: 'var(--radius-lg)', border: '1px solid transparent', transition: 'all 0.2s ease' }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.background = 'rgba(239, 71, 111, 0.04)'; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.background = 'transparent'; }}
           >
@@ -192,7 +195,7 @@ export default function LandingPage({ onEnterParams }) {
 
         {/* FEATURE CARDS (Bento grid 2-col) */}
         <section className="bento-grid">
-          <div className="landing-card bento-span-2" style={{ padding: '1.5rem' }}>
+          <div className="landing-card bento-span-2 l-anim-slide-right" style={{ padding: '1.5rem', animationDelay: '0.1s' }}>
             <div style={{ marginBottom: '1rem', padding: '10px', borderRadius: '12px', background: 'rgba(76,201,240,0.12)', border: '1px solid rgba(76,201,240,0.25)', width: 'fit-content' }}>
               <HelpCircle size={32} style={{ color: 'var(--accent-cyan)' }} strokeWidth={2.2} />
             </div>
@@ -201,7 +204,7 @@ export default function LandingPage({ onEnterParams }) {
               ¿Puede la colonia organizarse sola para que sobrevivan la mayor cantidad de adultos y huevos durante los 92 días del invierno antártico?
             </p>
           </div>
-          <div className="landing-card" style={{ padding: '1.5rem' }}>
+          <div className="landing-card l-anim-slide-left" style={{ padding: '1.5rem', animationDelay: '0.2s' }}>
             <div style={{ marginBottom: '1rem', padding: '10px', borderRadius: '12px', background: 'rgba(76,201,240,0.12)', border: '1px solid rgba(76,201,240,0.25)', width: 'fit-content' }}>
               <Snowflake size={32} style={{ color: 'var(--accent-cyan)' }} strokeWidth={2.2} />
             </div>
@@ -210,7 +213,7 @@ export default function LandingPage({ onEnterParams }) {
               Los que quedan en el borde reciben el viento de lleno y se enfrían rápido. Si un pingüino o su huevo se enfría demasiado, no se recuperan.
             </p>
           </div>
-          <div className="landing-card" style={{ padding: '1.5rem' }}>
+          <div className="landing-card l-anim-slide-right" style={{ padding: '1.5rem', animationDelay: '0.3s' }}>
             <div style={{ marginBottom: '1rem', padding: '10px', borderRadius: '12px', background: 'rgba(248, 150, 30, 0.12)', border: '1px solid rgba(248, 150, 30, 0.25)', width: 'fit-content' }}>
               <RefreshCw size={32} style={{ color: 'var(--accent-orange)' }} strokeWidth={2.2} />
             </div>
@@ -219,7 +222,7 @@ export default function LandingPage({ onEnterParams }) {
               Los del centro van al borde y los del borde pasan al centro. Es una rueda constante y es lo único que los mantiene vivos.
             </p>
           </div>
-          <div className="landing-card bento-span-2" style={{ background: 'linear-gradient(145deg, rgba(20, 20, 35, 0.8), rgba(248, 150, 30, 0.05))', border: '1px solid rgba(248, 150, 30, 0.2)', padding: '1.5rem' }}>
+          <div className="landing-card bento-span-2 l-anim-fade-up" style={{ background: 'linear-gradient(145deg, rgba(20, 20, 35, 0.8), rgba(248, 150, 30, 0.05))', border: '1px solid rgba(248, 150, 30, 0.2)', padding: '1.5rem', animationDelay: '0.4s' }}>
             <div style={{ marginBottom: '1rem', padding: '10px', borderRadius: '12px', background: 'rgba(248, 150, 30, 0.12)', border: '1px solid rgba(248, 150, 30, 0.3)', width: 'fit-content' }}>
               <Activity size={32} style={{ color: 'var(--accent-orange)' }} strokeWidth={2.2} />
             </div>
@@ -238,7 +241,7 @@ export default function LandingPage({ onEnterParams }) {
             </div>
           </div>
           <div className="bento-grid-3 text-center" style={{ gap: '1.5rem' }}>
-            <div className="landing-card" style={{ padding: '2.5rem 1.5rem' }}>
+            <div className="landing-card l-anim-slide-right" style={{ padding: '2.5rem 1.5rem', animationDelay: '0.1s' }}>
               <h4 style={{ fontSize: '1.4rem', marginBottom: '1rem', color: 'var(--accent-cyan)', fontWeight: 700 }}>Los del Borde</h4>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>Son los pingüinos que quedan en los costados del grupo. Reciben el viento y el frío de lleno, sin ninguna protección.</p>
               <div style={{ background: 'rgba(5, 8, 20, 0.5)', padding: '1rem', borderRadius: 'var(--radius)', fontSize: '0.85rem' }}>
@@ -246,7 +249,7 @@ export default function LandingPage({ onEnterParams }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}><span>Gasto de energía</span> <span style={{color:'var(--accent-red)'}}>Al máximo</span></div>
               </div>
             </div>
-            <div className="landing-card" style={{ padding: '2.5rem 1.5rem', border: '1px solid rgba(248, 150, 30, 0.3)', boxShadow: '0 0 30px rgba(248, 150, 30, 0.05)' }}>
+            <div className="landing-card l-anim-fade-up" style={{ padding: '2.5rem 1.5rem', border: '1px solid rgba(248, 150, 30, 0.3)', boxShadow: '0 0 30px rgba(248, 150, 30, 0.05)', animationDelay: '0.2s' }}>
               <h4 style={{ fontSize: '1.4rem', marginBottom: '1rem', color: 'var(--accent-orange)', fontWeight: 700 }}>El Centro (The Huddle)</h4>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>Es la zona más protegida del grupo, donde los pingüinos se aprietan unos contra otros y se mantienen calentitos.</p>
               <div style={{ background: 'rgba(5, 8, 20, 0.5)', padding: '1rem', borderRadius: 'var(--radius)', fontSize: '0.85rem' }}>
@@ -254,7 +257,7 @@ export default function LandingPage({ onEnterParams }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}><span>Recuperación</span> <span style={{color:'var(--accent-green)'}}>Buena</span></div>
               </div>
             </div>
-            <div className="landing-card" style={{ padding: '2.5rem 1.5rem' }}>
+            <div className="landing-card l-anim-slide-left" style={{ padding: '2.5rem 1.5rem', animationDelay: '0.3s' }}>
               <h4 style={{ fontSize: '1.4rem', marginBottom: '1rem', color: 'var(--accent-purple)', fontWeight: 700 }}>El Huevo</h4>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>El huevo va siempre arriba de las patas del padre, tapado por un pliegue de piel que lo mantiene a 36°C. Si se cae, se congela en minutos.</p>
               <div style={{ background: 'rgba(5, 8, 20, 0.5)', padding: '1rem', borderRadius: 'var(--radius)', fontSize: '0.85rem' }}>
@@ -267,7 +270,7 @@ export default function LandingPage({ onEnterParams }) {
 
         {/* FORRESTER + SIGNALS (split 2-col) */}
         <section className="bento-grid">
-          <div className="landing-card flex flex-col justify-center">
+          <div className="landing-card flex flex-col justify-center l-anim-slide-right" style={{ animationDelay: '0.1s' }}>
             <h3 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', fontWeight: 700 }}>Cómo es un Pingüino por Dentro</h3>
             <ul style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', color: 'var(--text-secondary)' }}>
               <li style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
@@ -284,7 +287,7 @@ export default function LandingPage({ onEnterParams }) {
               </li>
             </ul>
           </div>
-          <div className="landing-card">
+          <div className="landing-card l-anim-slide-left" style={{ animationDelay: '0.2s' }}>
             <h3 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', fontWeight: 700 }}>Señales de Peligro</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ padding: '1.25rem', background: 'rgba(239,71,111,0.05)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(239,71,111,0.2)' }}>
@@ -303,21 +306,21 @@ export default function LandingPage({ onEnterParams }) {
 
         {/* SCENARIOS */}
         <section>
-          <h2 style={{ fontSize: '2rem', marginBottom: '2rem', fontWeight: 800, textAlign: 'center' }}>Escenarios que se pueden Probar</h2>
+          <h2 className="l-anim-fade-up" style={{ fontSize: '2rem', marginBottom: '2rem', fontWeight: 800, textAlign: 'center', animationDelay: '0.1s' }}>Escenarios que se pueden Probar</h2>
           <div className="bento-grid-3 text-center">
-            <div className="landing-card" style={{ padding: '2rem 1.5rem' }}>
+            <div className="landing-card l-anim-slide-right" style={{ padding: '2rem 1.5rem', animationDelay: '0.2s' }}>
               <h4 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text-primary)' }}>Invierno Normal</h4>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
                 El clima antártico clásico, sin sorpresas. La mayoría de los pingüinos lo logra pasar: sobrevive entre el 80% y el 85% de la colonia.
               </p>
             </div>
-            <div className="landing-card" style={{ padding: '2rem 1.5rem' }}>
+            <div className="landing-card l-anim-fade-up" style={{ padding: '2rem 1.5rem', animationDelay: '0.3s' }}>
               <h4 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--accent-orange)' }}>Frío Extremo</h4>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
                 El invierno se estira y el frío se vuelve más fuerte de lo normal. Los pingüinos gastan más energía y los más débiles de la colonia no lo aguantan.
               </p>
             </div>
-            <div className="landing-card" style={{ padding: '2rem 1.5rem' }}>
+            <div className="landing-card l-anim-slide-left" style={{ padding: '2rem 1.5rem', animationDelay: '0.4s' }}>
               <h4 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--accent-red)' }}>Tormentas Fuertes</h4>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
                 Ráfagas de viento por encima de 180 km/h rompen la formación del grupo. El frío se mete hasta el centro y arrasa con todo: es un efecto dominó.
@@ -329,12 +332,12 @@ export default function LandingPage({ onEnterParams }) {
         {/* FEEDBACK LOOPS - Interactable */}
         <section style={{ margin: '1rem 0' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
-            <div className="badge-landing" style={{ background: 'rgba(76,201,240,0.1)', color: 'var(--accent-cyan)', border: '1px solid rgba(76,201,240,0.3)' }}>
+            <div className="badge-landing l-anim-pop" style={{ background: 'rgba(76,201,240,0.1)', color: 'var(--accent-cyan)', border: '1px solid rgba(76,201,240,0.3)', animationDelay: '0.1s' }}>
               <RefreshCw size={14} style={{ marginRight: '8px' }} /> Ciclos del Sistema · Arrastrá para explorar
             </div>
           </div>
           <div
-            className="scroll-container"
+            className="scroll-container l-anim-fade-up"
             ref={scrollRef}
             onMouseDown={handleDragStart}
             onMouseMove={handleDragMove}
@@ -356,7 +359,7 @@ export default function LandingPage({ onEnterParams }) {
 
         {/* MULTI-AGENT SIMULATOR (PASSI-inspired) */}
         <section className="bento-grid" style={{ marginTop: '2rem' }}>
-          <div className="landing-card bento-span-2" style={{ background: 'linear-gradient(145deg, rgba(20, 20, 35, 0.8), rgba(76, 201, 240, 0.05))', border: '1px solid rgba(76, 201, 240, 0.2)' }}>
+          <div className="landing-card bento-span-2 l-anim-slide-right" style={{ background: 'linear-gradient(145deg, rgba(20, 20, 35, 0.8), rgba(76, 201, 240, 0.05))', border: '1px solid rgba(76, 201, 240, 0.2)', animationDelay: '0.1s' }}>
             <div style={{ marginBottom: '1.5rem', padding: '14px', borderRadius: '14px', background: 'rgba(76,201,240,0.12)', border: '1px solid rgba(76,201,240,0.3)', width: 'fit-content' }}>
               <Users size={40} style={{ color: 'var(--accent-cyan)' }} strokeWidth={2.2} />
             </div>
@@ -368,7 +371,7 @@ export default function LandingPage({ onEnterParams }) {
               El diseño se basa en la metodología <strong style={{ color: 'var(--text-primary)' }}>PASSI</strong> (Process for Agent Societies Specification and Implementation), que permite organizar la colonia como una <em>sociedad de agentes</em> con roles bien definidos, tareas concretas y protocolos claros de interacción entre ellos. PASSI fue elegida porque su modelo de "sociedad de agentes" encaja perfecto con un grupo de pingüinos que cooperan para sobrevivir: cada uno cumple un rol, todos se comunican a través de reglas simples y el resultado global surge de esas interacciones locales.
             </p>
           </div>
-          <div className="landing-card">
+          <div className="landing-card l-anim-slide-left" style={{ animationDelay: '0.2s' }}>
             <h3 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', fontWeight: 700 }}>Conceptos que Usamos</h3>
             <ul style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem', color: 'var(--text-secondary)', listStyle: 'none', padding: 0, margin: 0 }}>
               <li style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>

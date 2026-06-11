@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Activity, ArrowRight, ShieldAlert, ShieldCheck, ThermometerSnowflake, Wind, Egg, Users, Flame, Snowflake, RefreshCw, HelpCircle, Info, Calendar, Skull, BookOpen } from 'lucide-react';
 import { PenguinLogo } from '../App.jsx';
@@ -28,10 +28,37 @@ export default function LandingPage({ onEnterParams }) {
   const navigate = useNavigate();
   const [activeModal, setActiveModal] = useState(null);
 
-  // Drag-to-scroll for the feedback loops section
+  // Auto-scroll for feedback loops
   const scrollRef = useRef(null);
   const dragState = useRef({ isDown: false, startX: 0, scrollLeft: 0 });
+  const autoScrollRef = useRef({ raf: null, speed: 0.5, direction: 1 });
   const [isDragging, setIsDragging] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
+
+  // Auto-scroll loop
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const state = autoScrollRef.current;
+
+    const tick = () => {
+      if (!isHovering && !isDragging) {
+        const maxScroll = el.scrollWidth - el.clientWidth;
+        if (maxScroll > 0) {
+          el.scrollLeft += state.speed * state.direction;
+          if (el.scrollLeft >= maxScroll) {
+            state.direction = -1;
+          } else if (el.scrollLeft <= 0) {
+            state.direction = 1;
+          }
+        }
+      }
+      state.raf = requestAnimationFrame(tick);
+    };
+
+    state.raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(state.raf);
+  }, [isHovering, isDragging]);
 
   const handleDragStart = (e) => {
     const el = scrollRef.current;
@@ -333,22 +360,23 @@ export default function LandingPage({ onEnterParams }) {
         <section style={{ margin: '1rem 0' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
             <div className="badge-landing l-anim-pop" style={{ background: 'rgba(76,201,240,0.1)', color: 'var(--accent-cyan)', border: '1px solid rgba(76,201,240,0.3)', animationDelay: '0.1s' }}>
-              <RefreshCw size={14} style={{ marginRight: '8px' }} /> Ciclos del Sistema · Arrastrá para explorar
+              <RefreshCw size={14} style={{ marginRight: '8px' }} /> Ciclos del Sistema
             </div>
           </div>
           <div
             className="scroll-container l-anim-fade-up"
             ref={scrollRef}
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => { setIsHovering(false); handleDragEnd(); }}
             onMouseDown={handleDragStart}
             onMouseMove={handleDragMove}
             onMouseUp={handleDragEnd}
-            onMouseLeave={handleDragEnd}
             onTouchStart={handleDragStart}
             onTouchMove={handleDragMove}
             onTouchEnd={handleDragEnd}
             style={{ cursor: isDragging ? 'grabbing' : 'grab', userSelect: 'none' }}
           >
-            <div className="scroll-track" style={{ animation: 'none' }}>
+            <div className="scroll-track">
               <LoopCard type="B1" title="El Centro Protege" desc="Cuando un pingüino entra al centro del grupo, recupera calor y energía. Así puede seguir funcionando bien todo el invierno." />
               <LoopCard type="R1" title="Lentos por el Huevo" desc="Los pingüinos que llevan un huevo encima se mueven más despacio, así que les cuesta más meterse rápido al centro cuando hace falta." />
               <LoopCard type="B2" title="El Calor se Comparte" desc="Los pingüinos calientes del centro rotan hacia los bordes y dejan entrar a los que están congelándose. Es un ciclo bueno para todos." />

@@ -1,10 +1,10 @@
 # Emperor Penguin Survival Sim
 
-![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
-![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E)
-![Three.js](https://img.shields.io/badge/Three.js-000000?style=for-the-badge&logo=three.js&logoColor=white)
-![React Router](https://img.shields.io/badge/React_Router-CA4245?style=for-the-badge&logo=react-router&logoColor=white)
-![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E)](https://vitejs.dev/)
+[![Three.js](https://img.shields.io/badge/Three.js-000000?style=for-the-badge&logo=three.js&logoColor=white)](https://threejs.org/)
+[![React Router](https://img.shields.io/badge/React_Router-CA4245?style=for-the-badge&logo=react-router&logoColor=white)](https://reactrouter.com/)
+[![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
 
 An **Agent-Based Modeling (ABM)** web application that simulates the winter huddle behavior of Emperor Penguin colonies (*Aptenodytes forsteri*) across the 92 days of the Antarctic winter. The model captures individual thermodynamics, the rotation dynamics of the huddle, and the stochastic risk of egg loss and freezing on exposed ice.
 
@@ -139,5 +139,4 @@ emperator-penguin-survival-sim/
 | **Camilo Andres Arias Tenjo** | [@CamiloAT](https://github.com/CamiloAT) |
 | **Jose Luis Ortega Castillo** | [@JoseOrtegaUPTC](https://github.com/JoseOrtegaUPTC) |
 
-*Computer Simulation — Systems and Computing Engineering*
-*Universidad Pedagógica y Tecnológica de Colombia (UPTC)*
+*Computer Simulation*
